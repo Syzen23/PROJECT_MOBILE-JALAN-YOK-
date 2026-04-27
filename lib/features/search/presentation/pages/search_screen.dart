@@ -221,17 +221,66 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildSearchResults() {
-    // Dummy results matching the figma
-    final resultTemplate = {
-      'title': 'Pantai Marina',
-      'location': 'Kalianda, Lampung',
-      'image': 'assets/images/Pantai.png',
-      'rating': 4.8,
-      'visitors': '1K+ Pengunjung',
-      'price': 'Tiket masuk: Rp 45.000',
-    };
+    final query = _searchController.text.toLowerCase();
+    
+    // Complete dummy data
+    final allDestinations = [
+      {
+        'title': 'Pantai Marina',
+        'location': 'Kalianda, Lampung',
+        'image': 'assets/images/Pantai.png',
+        'rating': 4.8,
+        'visitors': '1K+ Pengunjung',
+        'price': 'Tiket masuk: Rp 45.000',
+      },
+      {
+        'title': 'Gunung Bromo',
+        'location': 'Jawa Timur',
+        'image': 'assets/images/BromoCard.png',
+        'rating': 4.9,
+        'visitors': '5K+ Pengunjung',
+        'price': 'Tiket masuk: Rp 35.000',
+      },
+      {
+        'title': 'Tari Kecak',
+        'location': 'Pura Luhur Uluwatu, Bali',
+        'image': 'assets/images/FestivalCard.png',
+        'rating': 4.8,
+        'visitors': '2K+ Pengunjung',
+        'price': 'Tiket masuk: Rp 150.000',
+      },
+      {
+        'title': 'Nusa Penida',
+        'location': 'Bali',
+        'image': 'assets/images/NusaPenidaCard.png',
+        'rating': 4.9,
+        'visitors': '3K+ Pengunjung',
+        'price': 'Tiket masuk: Rp 25.000',
+      },
+      {
+        'title': 'Toraja',
+        'location': 'Sulawesi Selatan',
+        'image': 'assets/images/TorajaCard.png',
+        'rating': 4.7,
+        'visitors': '1K+ Pengunjung',
+        'price': 'Tiket masuk: Rp 50.000',
+      },
+    ];
 
-    final results = List.generate(5, (index) => resultTemplate);
+    final results = allDestinations.where((item) {
+      final titleMatch = item['title'].toString().toLowerCase().contains(query);
+      final locationMatch = item['location'].toString().toLowerCase().contains(query);
+      return titleMatch || locationMatch;
+    }).toList();
+
+    if (results.isEmpty) {
+      return const Center(
+        child: Text(
+          'Destinasi tidak ditemukan',
+          style: TextStyle(color: Colors.grey, fontSize: 14),
+        ),
+      );
+    }
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
