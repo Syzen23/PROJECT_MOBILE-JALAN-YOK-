@@ -13,7 +13,7 @@ class OnboardingScreen extends StatelessWidget {
         children: [
           // Background color for the bottom half
           Container(
-            color: const Color(0xFFEAF4FF).withOpacity(0.5), // Very light blue gradient effect from bottom
+            color: const Color(0xFFEAF4FF).withValues(alpha: 0.5), // Very light blue gradient effect from bottom
           ),
           
           Column(

@@ -50,8 +50,8 @@ class HomeScreen extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.4),
-                  Colors.black.withOpacity(0.1),
+                  Colors.black.withValues(alpha: 0.4),
+                  Colors.black.withValues(alpha: 0.1),
                   Colors.transparent,
                 ],
               ),
@@ -97,7 +97,7 @@ class HomeScreen extends StatelessWidget {
                         Text(
                           'Mau jalan ke mana hari ini?',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 14,
                           ),
                         ),
@@ -116,13 +116,17 @@ class HomeScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.4),
+                    color: Colors.black.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                   ),
-                  child: const TextField(
-                    style: TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
+                  child: TextField(
+                    readOnly: true,
+                    onTap: () {
+                      context.push('/search');
+                    },
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
                       icon: Icon(Icons.search, color: Colors.white),
                       hintText: 'Cari destinasi wisata....',
                       hintStyle: TextStyle(color: Colors.white70),
@@ -158,7 +162,7 @@ class HomeScreen extends StatelessWidget {
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
               colors: [
-                Colors.black.withOpacity(0.6),
+                Colors.black.withValues(alpha: 0.6),
                 Colors.transparent,
               ],
             ),
@@ -178,7 +182,7 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () {},
-                icon: SvgPicture.asset('assets/images/rocket.svg', color: Colors.white, width: 16),
+                icon: SvgPicture.asset('assets/images/rocket.svg', colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn), width: 16),
                 label: const Text('Buat Rencana Perjalanan', style: TextStyle(fontSize: 12)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF007AFF),
@@ -232,7 +236,7 @@ class HomeScreen extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 220,
+          height: 260,
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -275,7 +279,7 @@ class HomeScreen extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 220,
+          height: 260,
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -323,7 +327,7 @@ class HomeScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),

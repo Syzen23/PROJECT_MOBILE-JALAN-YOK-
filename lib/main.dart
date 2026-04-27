@@ -9,13 +9,22 @@ import 'features/home/presentation/pages/home_screen.dart';
 import 'features/plan/presentation/pages/plan_screen.dart';
 import 'features/history/presentation/pages/history_screen.dart';
 import 'features/profile/presentation/pages/profile_screen.dart';
+import 'features/search/presentation/pages/search_screen.dart';
 import 'widgets/scaffold_with_nav_bar.dart';
 
-final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
-final GlobalKey<NavigatorState> _shellNavigatorHome = GlobalKey<NavigatorState>(debugLabel: 'shellHome');
-final GlobalKey<NavigatorState> _shellNavigatorPlan = GlobalKey<NavigatorState>(debugLabel: 'shellPlan');
-final GlobalKey<NavigatorState> _shellNavigatorHistory = GlobalKey<NavigatorState>(debugLabel: 'shellHistory');
-final GlobalKey<NavigatorState> _shellNavigatorProfile = GlobalKey<NavigatorState>(debugLabel: 'shellProfile');
+final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
+  debugLabel: 'root',
+);
+final GlobalKey<NavigatorState> _shellNavigatorHome = GlobalKey<NavigatorState>(
+  debugLabel: 'shellHome',
+);
+final GlobalKey<NavigatorState> _shellNavigatorPlan = GlobalKey<NavigatorState>(
+  debugLabel: 'shellPlan',
+);
+final GlobalKey<NavigatorState> _shellNavigatorHistory =
+    GlobalKey<NavigatorState>(debugLabel: 'shellHistory');
+final GlobalKey<NavigatorState> _shellNavigatorProfile =
+    GlobalKey<NavigatorState>(debugLabel: 'shellProfile');
 
 void main() {
   runApp(const MyApp());
@@ -61,6 +70,12 @@ final GoRouter _router = GoRouter(
       path: '/register',
       builder: (BuildContext context, GoRouterState state) {
         return const RegisterScreen();
+      },
+    ),
+    GoRoute(
+      path: '/search',
+      builder: (BuildContext context, GoRouterState state) {
+        return const SearchScreen();
       },
     ),
     StatefulShellRoute.indexedStack(
@@ -126,7 +141,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF007AFF),
           primary: const Color(0xFF007AFF),
-          background: const Color(0xFFFFFFFF),
+          surface: const Color(0xFFFFFFFF),
         ),
         scaffoldBackgroundColor: const Color(0xFFFFFFFF),
         fontFamily: 'Inter',
