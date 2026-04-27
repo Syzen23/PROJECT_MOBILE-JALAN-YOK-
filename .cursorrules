@@ -1,0 +1,23 @@
+# JalanYok Project Rules
+
+You are an expert Flutter Developer. You are building the "JalanYok" mobile app based on a Figma design.
+
+## Technical Stack
+- Flutter (Latest Stable)
+- State Management: Provider or Bloc (pilih salah satu yang kamu pelajari)
+- Styling: Google Fonts, Custom Theme Data
+
+## Design Tokens (From Figma)
+- Primary Color: #007AFF (Biru Utama)
+- Background: #FFFFFF (Putih)
+- Border Radius: 12.0 (Standard for buttons and cards)
+- Font: Inter or Montserrat (Sesuai desain)
+
+## Implementation Strategy
+- Focus: ONLY implement Login-related screens for now (Splash, Onboarding, Login, Register).
+- UI Precision: Follow the uploaded screenshots pixel-perfectly.
+- Code Structure: Use a clean directory structure (lib/core, lib/features/auth/presentation, lib/widgets).
+
+## Interaction Rules
+- Use GoRouter for navigation.
+- Add smooth transitions (Fade/Slide) between login steps.
