@@ -1,7 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
-import '../database/database_helper.dart';
+import 'firestore_service.dart';
 
 class AuthService {
   static const String _keyUserId = 'user_id';
@@ -11,7 +11,7 @@ class AuthService {
 
   static Future<bool> saveUserSession(User user) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_keyUserId, user.id!);
+    await prefs.setString(_keyUserId, user.id!);
     await prefs.setString(_keyUserName, user.name);
     await prefs.setString(_keyUserEmail, user.email);
     await prefs.setString(_keyUserRole, user.role);
@@ -20,7 +20,7 @@ class AuthService {
 
   static Future<User?> getCurrentUser() async {
     final prefs = await SharedPreferences.getInstance();
-    final id = prefs.getInt(_keyUserId);
+    final id = prefs.getString(_keyUserId);
     if (id == null) return null;
 
     return User(
@@ -41,7 +41,7 @@ class AuthService {
   }
 
   static Future<User?> login(String email, String password) async {
-    final user = await DatabaseHelper.instance.login(email, password);
+    final user = await FirestoreService.instance.login(email, password);
     if (user != null) {
       await saveUserSession(user);
     }
@@ -55,7 +55,7 @@ class AuthService {
       password: password,
       role: 'user', // Default role for new signups
     );
-    final registeredUser = await DatabaseHelper.instance.register(user);
+    final registeredUser = await FirestoreService.instance.register(user);
     if (registeredUser != null) {
       await saveUserSession(registeredUser);
     }
@@ -82,18 +82,18 @@ class AuthService {
       final String email = googleUser.email;
       final String name = googleUser.displayName ?? 'Google User';
 
-      // Check if user already exists in SQLite
-      User? localUser = await DatabaseHelper.instance.getUserByEmail(email);
+      // Check if user already exists in Firestore
+      User? existingUser = await FirestoreService.instance.getUserByEmail(email);
 
-      if (localUser == null) {
+      if (existingUser == null) {
         // User doesn't exist, register them with a dummy password
-        localUser = await register(name, email, 'google_login_dummy_password');
+        existingUser = await register(name, email, 'google_login_dummy_password');
       } else {
         // User exists, just save session
-        await saveUserSession(localUser);
+        await saveUserSession(existingUser);
       }
 
-      return localUser;
+      return existingUser;
     } catch (e) {
       print('Error logging in with Google: $e');
       return null;

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/database/database_helper.dart';
+import '../../../../core/services/firestore_service.dart';
 import '../../../../core/models/destination_model.dart';
 
 class AdminDestinationsScreen extends StatefulWidget {
@@ -22,15 +22,15 @@ class _AdminDestinationsScreenState extends State<AdminDestinationsScreen> {
   }
 
   Future<void> _loadDestinations() async {
-    final data = await DatabaseHelper.instance.getAllDestinations();
+    final data = await FirestoreService.instance.getAllDestinations();
     setState(() {
       destinations = data;
       isLoading = false;
     });
   }
 
-  Future<void> _deleteDestination(int id) async {
-    await DatabaseHelper.instance.deleteDestination(id);
+  Future<void> _deleteDestination(String id) async {
+    await FirestoreService.instance.deleteDestination(id);
     _loadDestinations();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -1,5 +1,5 @@
 class Destination {
-  final int? id;
+  final String? id;
   final String title;
   final String location;
   final String image;
@@ -32,15 +32,15 @@ class Destination {
     };
   }
 
-  factory Destination.fromMap(Map<String, dynamic> map) {
+  factory Destination.fromMap(Map<String, dynamic> map, {String? documentId}) {
     return Destination(
-      id: map['id'],
+      id: documentId ?? map['id'],
       title: map['title'],
       location: map['location'],
       image: map['image'],
-      rating: map['rating'] as double,
+      rating: map['rating'] is int ? (map['rating'] as int).toDouble() : map['rating'] as double,
       visitors: map['visitors'] as String,
-      tiket: map['tiket'] as double,
+      tiket: map['tiket'] is int ? (map['tiket'] as int).toDouble() : map['tiket'] as double,
       waktu: map['waktu'] as int,
     );
   }

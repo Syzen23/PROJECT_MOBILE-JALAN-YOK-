@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../core/database/database_helper.dart';
+import '../../../../core/services/firestore_service.dart';
 import '../../../../core/models/destination_model.dart';
 
 class DestinationFormScreen extends StatefulWidget {
@@ -82,9 +82,9 @@ class _DestinationFormScreenState extends State<DestinationFormScreen> {
     );
 
     if (dest.id == null) {
-      await DatabaseHelper.instance.create(dest);
+      await FirestoreService.instance.create(dest);
     } else {
-      await DatabaseHelper.instance.updateDestination(dest);
+      await FirestoreService.instance.updateDestination(dest);
     }
 
     if (mounted) {

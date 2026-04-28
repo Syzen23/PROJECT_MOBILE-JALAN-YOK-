@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/database/database_helper.dart';
+import '../../../../core/services/firestore_service.dart';
 import '../../../../core/models/user_model.dart';
 
 class AdminUsersScreen extends StatefulWidget {
@@ -20,7 +20,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   }
 
   Future<void> _loadUsers() async {
-    final data = await DatabaseHelper.instance.getAllUsers();
+    final data = await FirestoreService.instance.getAllUsers();
     setState(() {
       users = data;
       isLoading = false;

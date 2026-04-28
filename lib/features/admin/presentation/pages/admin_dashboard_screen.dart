@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/database/database_helper.dart';
+import '../../../../core/services/firestore_service.dart';
 import '../../../../core/services/auth_service.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -22,8 +22,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Future<void> _loadStats() async {
-    final users = await DatabaseHelper.instance.getAllUsers();
-    final destinations = await DatabaseHelper.instance.getAllDestinations();
+    final users = await FirestoreService.instance.getAllUsers();
+    final destinations = await FirestoreService.instance.getAllDestinations();
     
     setState(() {
       totalUsers = users.length;

@@ -1,7 +1,7 @@
 class TripHistory {
-  final int? id;
-  final int userId;
-  final int destinationId;
+  final String? id;
+  final String userId;
+  final String destinationId;
   final String transport;
   final double totalBudget;
   final String date;
@@ -26,13 +26,13 @@ class TripHistory {
     };
   }
 
-  factory TripHistory.fromMap(Map<String, dynamic> map) {
+  factory TripHistory.fromMap(Map<String, dynamic> map, {String? documentId}) {
     return TripHistory(
-      id: map['id'],
-      userId: map['user_id'],
-      destinationId: map['destination_id'],
+      id: documentId ?? map['id'],
+      userId: map['user_id'].toString(),
+      destinationId: map['destination_id'].toString(),
       transport: map['transport'],
-      totalBudget: map['total_budget'],
+      totalBudget: map['total_budget'] is int ? (map['total_budget'] as int).toDouble() : map['total_budget'] as double,
       date: map['date'],
     );
   }

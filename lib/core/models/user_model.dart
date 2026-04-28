@@ -1,5 +1,5 @@
 class User {
-  final int? id;
+  final String? id;
   final String name;
   final String email;
   final String password;
@@ -23,12 +23,12 @@ class User {
     };
   }
 
-  factory User.fromMap(Map<String, dynamic> map) {
+  factory User.fromMap(Map<String, dynamic> map, {String? documentId}) {
     return User(
-      id: map['id'],
+      id: documentId ?? map['id'],
       name: map['name'],
       email: map['email'],
-      password: map['password'],
+      password: map['password'] ?? '',
       role: map['role'],
     );
   }

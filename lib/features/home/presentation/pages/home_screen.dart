@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:jalanyok2/core/database/database_helper.dart';
+import 'package:jalanyok2/core/services/firestore_service.dart';
 import 'package:jalanyok2/core/models/destination_model.dart';
 import 'destination_detail_screen.dart';
 
@@ -24,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadDestinations() async {
-    final data = await DatabaseHelper.instance.getAllDestinations();
+    final data = await FirestoreService.instance.getAllDestinations();
     setState(() {
       _destinations = data;
       _isLoading = false;

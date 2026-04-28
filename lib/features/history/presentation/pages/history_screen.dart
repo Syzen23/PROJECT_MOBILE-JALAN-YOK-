@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../../../../core/database/database_helper.dart';
+import '../../../../core/services/firestore_service.dart';
 import '../../../../core/services/auth_service.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -23,7 +23,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Future<void> _loadHistory() async {
     final user = await AuthService.getCurrentUser();
     if (user != null) {
-      final data = await DatabaseHelper.instance.getTripHistoryForUser(user.id!);
+      final data = await FirestoreService.instance.getTripHistoryForUser(user.id!);
       setState(() {
         historyItems = data;
         isLoading = false;

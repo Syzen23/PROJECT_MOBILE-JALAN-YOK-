@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:go_router/go_router.dart';
-import '../../../../core/database/database_helper.dart';
+import '../../../../core/services/firestore_service.dart';
 import '../../../../core/models/destination_model.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -52,7 +52,7 @@ class _SearchScreenState extends State<SearchScreen> {
       _isLoading = true;
     });
 
-    final results = await DatabaseHelper.instance.searchDestinations(query);
+    final results = await FirestoreService.instance.searchDestinations(query);
 
     setState(() {
       _searchResults = results;

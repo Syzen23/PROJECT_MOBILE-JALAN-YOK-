@@ -13,6 +13,7 @@ import 'features/search/presentation/pages/search_screen.dart';
 import 'widgets/scaffold_with_nav_bar.dart';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'core/services/firestore_service.dart';
 import 'features/admin/presentation/widgets/admin_scaffold.dart';
 import 'features/admin/presentation/pages/admin_dashboard_screen.dart';
 import 'features/admin/presentation/pages/admin_destinations_screen.dart';
@@ -45,6 +46,7 @@ final GlobalKey<NavigatorState> _shellNavigatorAdminUsers =
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await FirestoreService.instance.seedIfEmpty();
   runApp(const MyApp());
 }
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:jalanyok2/core/database/database_helper.dart';
+import 'package:jalanyok2/core/services/firestore_service.dart';
 import 'package:jalanyok2/core/models/destination_model.dart';
 import 'package:jalanyok2/core/services/auth_service.dart';
 import 'package:jalanyok2/core/models/trip_history_model.dart';
@@ -49,7 +49,7 @@ class _PlanScreenState extends State<PlanScreen> {
   }
 
   Future<void> _loadDestinations() async {
-    final data = await DatabaseHelper.instance.getAllDestinations();
+    final data = await FirestoreService.instance.getAllDestinations();
     setState(() {
       destinations = data;
       if (destinations.isNotEmpty) {
@@ -125,7 +125,7 @@ class _PlanScreenState extends State<PlanScreen> {
       date: DateTime.now().toIso8601String().split('T').first,
     );
 
-    await DatabaseHelper.instance.insertTripHistory(history);
+    await FirestoreService.instance.insertTripHistory(history);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Berhasil disimpan ke Riwayat!')));
