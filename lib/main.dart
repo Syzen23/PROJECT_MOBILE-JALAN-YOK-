@@ -12,6 +12,14 @@ import 'features/profile/presentation/pages/profile_screen.dart';
 import 'features/search/presentation/pages/search_screen.dart';
 import 'widgets/scaffold_with_nav_bar.dart';
 
+// Admin imports
+import 'features/admin/presentation/widgets/admin_scaffold.dart';
+import 'features/admin/presentation/pages/admin_dashboard_screen.dart';
+import 'features/admin/presentation/pages/admin_destinations_screen.dart';
+import 'features/admin/presentation/pages/admin_users_screen.dart';
+import 'features/admin/presentation/pages/destination_form_screen.dart';
+import 'core/models/destination_model.dart';
+
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'root',
 );
@@ -25,6 +33,14 @@ final GlobalKey<NavigatorState> _shellNavigatorHistory =
     GlobalKey<NavigatorState>(debugLabel: 'shellHistory');
 final GlobalKey<NavigatorState> _shellNavigatorProfile =
     GlobalKey<NavigatorState>(debugLabel: 'shellProfile');
+
+// Admin Navigators
+final GlobalKey<NavigatorState> _shellNavigatorAdminDashboard = 
+    GlobalKey<NavigatorState>(debugLabel: 'shellAdminDashboard');
+final GlobalKey<NavigatorState> _shellNavigatorAdminDestinations = 
+    GlobalKey<NavigatorState>(debugLabel: 'shellAdminDestinations');
+final GlobalKey<NavigatorState> _shellNavigatorAdminUsers = 
+    GlobalKey<NavigatorState>(debugLabel: 'shellAdminUsers');
 
 void main() {
   runApp(const MyApp());
@@ -124,6 +140,48 @@ final GoRouter _router = GoRouter(
           ],
         ),
       ],
+    ),
+    // Admin Shell
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) {
+        return AdminScaffold(navigationShell: navigationShell);
+      },
+      branches: [
+        StatefulShellBranch(
+          navigatorKey: _shellNavigatorAdminDashboard,
+          routes: [
+            GoRoute(
+              path: '/admin_home',
+              builder: (context, state) => const AdminDashboardScreen(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          navigatorKey: _shellNavigatorAdminDestinations,
+          routes: [
+            GoRoute(
+              path: '/admin_destinations',
+              builder: (context, state) => const AdminDestinationsScreen(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          navigatorKey: _shellNavigatorAdminUsers,
+          routes: [
+            GoRoute(
+              path: '/admin_users',
+              builder: (context, state) => const AdminUsersScreen(),
+            ),
+          ],
+        ),
+      ],
+    ),
+    GoRoute(
+      path: '/admin/destination-form',
+      builder: (context, state) {
+        final dest = state.extra as Destination?;
+        return DestinationFormScreen(destination: dest);
+      },
     ),
   ],
 );

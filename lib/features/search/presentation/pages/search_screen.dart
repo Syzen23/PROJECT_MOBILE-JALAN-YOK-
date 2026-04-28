@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jalanyok2/core/database/database_helper.dart';
+import 'package:jalanyok2/core/models/destination_model.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -11,6 +13,8 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _showResults = false;
+  List<Destination> _searchResults = [];
+  bool _isLoading = false;
 
   final List<String> _riwayatPencarian = [
     'Pantai Marina',
@@ -29,10 +33,29 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() {
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
       setState(() {
-        _showResults = _searchController.text.isNotEmpty;
+        _showResults = false;
+        _searchResults = [];
       });
+      return;
+    }
+
+    setState(() {
+      _showResults = true;
+      _isLoading = true;
+    });
+
+    final results = await DatabaseHelper.instance.searchDestinations(query);
+
+    setState(() {
+      _searchResults = results;
+      _isLoading = false;
     });
   }
 
@@ -221,59 +244,11 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildSearchResults() {
-    final query = _searchController.text.toLowerCase();
-    
-    // Complete dummy data
-    final allDestinations = [
-      {
-        'title': 'Pantai Marina',
-        'location': 'Kalianda, Lampung',
-        'image': 'assets/images/Pantai.png',
-        'rating': 4.8,
-        'visitors': '1K+ Pengunjung',
-        'price': 'Tiket masuk: Rp 45.000',
-      },
-      {
-        'title': 'Gunung Bromo',
-        'location': 'Jawa Timur',
-        'image': 'assets/images/BromoCard.png',
-        'rating': 4.9,
-        'visitors': '5K+ Pengunjung',
-        'price': 'Tiket masuk: Rp 35.000',
-      },
-      {
-        'title': 'Tari Kecak',
-        'location': 'Pura Luhur Uluwatu, Bali',
-        'image': 'assets/images/FestivalCard.png',
-        'rating': 4.8,
-        'visitors': '2K+ Pengunjung',
-        'price': 'Tiket masuk: Rp 150.000',
-      },
-      {
-        'title': 'Nusa Penida',
-        'location': 'Bali',
-        'image': 'assets/images/NusaPenidaCard.png',
-        'rating': 4.9,
-        'visitors': '3K+ Pengunjung',
-        'price': 'Tiket masuk: Rp 25.000',
-      },
-      {
-        'title': 'Toraja',
-        'location': 'Sulawesi Selatan',
-        'image': 'assets/images/TorajaCard.png',
-        'rating': 4.7,
-        'visitors': '1K+ Pengunjung',
-        'price': 'Tiket masuk: Rp 50.000',
-      },
-    ];
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF007AFF)));
+    }
 
-    final results = allDestinations.where((item) {
-      final titleMatch = item['title'].toString().toLowerCase().contains(query);
-      final locationMatch = item['location'].toString().toLowerCase().contains(query);
-      return titleMatch || locationMatch;
-    }).toList();
-
-    if (results.isEmpty) {
+    if (_searchResults.isEmpty) {
       return const Center(
         child: Text(
           'Destinasi tidak ditemukan',
@@ -284,15 +259,15 @@ class _SearchScreenState extends State<SearchScreen> {
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-      itemCount: results.length,
+      itemCount: _searchResults.length,
       itemBuilder: (context, index) {
-        final item = results[index];
+        final item = _searchResults[index];
         return _buildResultCard(item);
       },
     );
   }
 
-  Widget _buildResultCard(Map<String, dynamic> item) {
+  Widget _buildResultCard(Destination item) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -309,7 +284,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.asset(
-                item['image'],
+                item.image,
                 width: 80,
                 height: 90,
                 fit: BoxFit.cover,
@@ -333,7 +308,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item['title'],
+                    item.title,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -341,13 +316,13 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  _buildInfoRow(Icons.location_on, Colors.black87, item['location']),
+                  _buildInfoRow(Icons.location_on, Colors.black87, item.location),
                   const SizedBox(height: 4),
-                  _buildInfoRow(Icons.star, Colors.amber, "${item['rating']} (Grade)"),
+                  _buildInfoRow(Icons.star, Colors.amber, "${item.rating} (Grade)"),
                   const SizedBox(height: 4),
-                  _buildInfoRow(Icons.people_outline, const Color(0xFF007AFF), item['visitors']),
+                  _buildInfoRow(Icons.people_outline, const Color(0xFF007AFF), item.visitors),
                   const SizedBox(height: 4),
-                  _buildInfoRow(Icons.confirmation_num_outlined, Colors.green, item['price']),
+                  _buildInfoRow(Icons.confirmation_num_outlined, Colors.green, "Tiket masuk: Rp ${item.tiket.toInt()}"),
                 ],
               ),
             ),

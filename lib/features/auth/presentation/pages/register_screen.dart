@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:jalanyok2/core/services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -12,6 +13,17 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureText = true;
   bool _rememberMe = false;
+  bool _isLoading = false;
+
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               
               // Email Field
               TextFormField(
-                initialValue: 'marufganteng@gmail.com', // As shown in mockup
+                controller: _emailController,
                 decoration: InputDecoration(
                   hintText: 'Email',
                   prefixIcon: const Icon(Icons.email, color: Colors.black87),
@@ -73,8 +85,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               
               // Password Field
               TextFormField(
+                controller: _passwordController,
                 obscureText: _obscureText,
-                initialValue: '12345678', // Just a placeholder
                 decoration: InputDecoration(
                   hintText: 'Password',
                   prefixIcon: const Icon(Icons.lock, color: Colors.black87),
@@ -135,8 +147,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    context.go('/home');
+                  onPressed: _isLoading ? null : () async {
+                    setState(() => _isLoading = true);
+                    final email = _emailController.text.trim();
+                    final password = _passwordController.text;
+                    final name = email.split('@').first; // Default name from email
+                    
+                    final user = await AuthService.register(name, email, password);
+                    
+                    if (!context.mounted) return;
+                    setState(() => _isLoading = false);
+                    
+                    if (user != null) {
+                      context.go('/home');
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Registration failed. Email might already exist.')),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF007AFF),
@@ -146,10 +174,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       borderRadius: BorderRadius.circular(100),
                     ),
                   ),
-                  child: const Text(
-                    'Sign up',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  child: _isLoading 
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text(
+                          'Sign up',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                 ),
               ),
               const SizedBox(height: 40),

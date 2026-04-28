@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:jalanyok2/core/database/database_helper.dart';
+import 'package:jalanyok2/core/models/destination_model.dart';
+import 'package:jalanyok2/core/services/auth_service.dart';
+import 'package:jalanyok2/core/models/trip_history_model.dart';
 
 class PlanScreen extends StatefulWidget {
   const PlanScreen({super.key});
@@ -22,45 +26,9 @@ class _PlanScreenState extends State<PlanScreen> {
   final TextEditingController _penginapanController = TextEditingController();
   
   // Destination Database
-  final List<Map<String, dynamic>> destinations = [
-    {
-      'title': 'Pantai Marina',
-      'location': 'Kalianda, Lampung',
-      'tiket': 20000,
-      'jarak': 120.0,
-      'waktu': 3,
-    },
-    {
-      'title': 'Gunung Bromo',
-      'location': 'Jawa Timur',
-      'tiket': 35000,
-      'jarak': 850.0,
-      'waktu': 12,
-    },
-    {
-      'title': 'Tari Kecak',
-      'location': 'Bali',
-      'tiket': 150000,
-      'jarak': 1200.0,
-      'waktu': 24,
-    },
-    {
-      'title': 'Nusa Penida',
-      'location': 'Bali',
-      'tiket': 25000,
-      'jarak': 1250.0,
-      'waktu': 25,
-    },
-    {
-      'title': 'Toraja',
-      'location': 'Sulawesi Selatan',
-      'tiket': 50000,
-      'jarak': 2000.0,
-      'waktu': 48,
-    },
-  ];
-
-  late Map<String, dynamic> _selectedDestination;
+  List<Destination> destinations = [];
+  Destination? _selectedDestination;
+  bool _isLoading = true;
 
   // Constants
   final double hargaBbmPerLiter = 10000.0; // Asumsi harga BBM
@@ -76,7 +44,18 @@ class _PlanScreenState extends State<PlanScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedDestination = destinations[0]; // Default to Pantai Marina
+    _loadDestinations();
+  }
+
+  Future<void> _loadDestinations() async {
+    final data = await DatabaseHelper.instance.getAllDestinations();
+    setState(() {
+      destinations = data;
+      if (destinations.isNotEmpty) {
+        _selectedDestination = destinations[0];
+      }
+      _isLoading = false;
+    });
   }
 
   @override
@@ -91,7 +70,9 @@ class _PlanScreenState extends State<PlanScreen> {
   }
 
   void _hitungBudget() {
-    double jarak = _selectedDestination['jarak'];
+    if (_selectedDestination == null) return;
+    
+    double jarak = _selectedDestination!.jarak;
 
     // 1. BBM
     double konsumsiBbm = double.tryParse(_bbmController.text) ?? 0;
@@ -103,7 +84,7 @@ class _PlanScreenState extends State<PlanScreen> {
 
     // 2. Tiket
     if (_isTiketOtomatis) {
-      _biayaTiket = _selectedDestination['tiket'].toDouble();
+      _biayaTiket = _selectedDestination!.tiket;
     } else {
       _biayaTiket = double.tryParse(_tiketController.text) ?? 0;
     }
@@ -119,11 +100,34 @@ class _PlanScreenState extends State<PlanScreen> {
     _biayaMakan = double.tryParse(_makanController.text) ?? 0;
     _biayaPenginapan = double.tryParse(_penginapanController.text) ?? 0;
 
-    // Total
-    _totalBiaya = _biayaBBM + _biayaTiket + _biayaParkir + _biayaMakan + _biayaPenginapan;
-
-    setState(() {});
+    setState(() {
+      _totalBiaya = _biayaBBM + _biayaTiket + _biayaParkir + _biayaMakan + _biayaPenginapan;
+    });
     DefaultTabController.of(context).animateTo(1);
+  }
+
+  Future<void> _simpanKeRiwayat() async {
+    final user = await AuthService.getCurrentUser();
+    if (user == null || _selectedDestination == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Harap login dan pilih destinasi.')));
+      }
+      return;
+    }
+
+    final history = TripHistory(
+      userId: user.id!,
+      destinationId: _selectedDestination!.id!,
+      transport: _selectedTransport,
+      totalBudget: _totalBiaya,
+      date: DateTime.now().toIso8601String().split('T').first,
+    );
+
+    await DatabaseHelper.instance.insertTripHistory(history);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Berhasil disimpan ke Riwayat!')));
+    }
   }
 
   String _formatCurrency(double amount) {
@@ -142,6 +146,13 @@ class _PlanScreenState extends State<PlanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF007AFF))),
+      );
+    }
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -267,18 +278,18 @@ class _PlanScreenState extends State<PlanScreen> {
                               ),
                             ),
                             const Divider(height: 16),
-                            Autocomplete<Map<String, dynamic>>(
-                              initialValue: TextEditingValue(text: _selectedDestination['title']),
-                              displayStringForOption: (option) => option['title'],
+                            Autocomplete<Destination>(
+                              initialValue: TextEditingValue(text: _selectedDestination?.title ?? ''),
+                              displayStringForOption: (option) => option.title,
                               optionsBuilder: (TextEditingValue textEditingValue) {
                                 if (textEditingValue.text.isEmpty) {
                                   return destinations;
                                 }
                                 return destinations.where((option) {
-                                  return option['title'].toString().toLowerCase().contains(textEditingValue.text.toLowerCase());
+                                  return option.title.toLowerCase().contains(textEditingValue.text.toLowerCase());
                                 });
                               },
-                              onSelected: (Map<String, dynamic> selection) {
+                              onSelected: (Destination selection) {
                                 setState(() {
                                   _selectedDestination = selection;
                                 });
@@ -654,10 +665,10 @@ class _PlanScreenState extends State<PlanScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: _buildResultBox('Jarak', '${_selectedDestination['jarak'].toInt()} km'),
+                      child: _buildResultBox('Jarak', '${_selectedDestination?.jarak.toInt() ?? 0} km'),
                     ),
                     const SizedBox(width: 16),
-                    Expanded(child: _buildResultBox('Waktu', '${_selectedDestination['waktu']} Jam')),
+                    Expanded(child: _buildResultBox('Waktu', '${_selectedDestination?.waktu ?? 0} Jam')),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -737,23 +748,45 @@ class _PlanScreenState extends State<PlanScreen> {
         // Hitung Button inside the white card
         Padding(
           padding: const EdgeInsets.all(20.0),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                DefaultTabController.of(context).animateTo(0);
-              },
-              icon: const Icon(Icons.edit, size: 18),
-              label: const Text('Edit Budget', style: TextStyle(fontSize: 14)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF007AFF),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+          child: Column(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    DefaultTabController.of(context).animateTo(0);
+                  },
+                  icon: const Icon(Icons.edit, size: 18),
+                  label: const Text('Edit Budget', style: TextStyle(fontSize: 14)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF007AFF),
+                    side: const BorderSide(color: Color(0xFF007AFF)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _simpanKeRiwayat,
+                  icon: const Icon(Icons.save, size: 18),
+                  label: const Text('Simpan ke Riwayat', style: TextStyle(fontSize: 14)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF007AFF),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],

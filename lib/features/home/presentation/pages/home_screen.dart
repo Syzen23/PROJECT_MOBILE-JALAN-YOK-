@@ -1,13 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jalanyok2/core/database/database_helper.dart';
+import 'package:jalanyok2/core/models/destination_model.dart';
 import 'destination_detail_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  List<Destination> _destinations = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDestinations();
+  }
+
+  Future<void> _loadDestinations() async {
+    final data = await DatabaseHelper.instance.getAllDestinations();
+    setState(() {
+      _destinations = data;
+      _isLoading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF007AFF))),
+      );
+    }
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
@@ -201,6 +231,9 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildDestinasiPopuler(BuildContext context) {
+    // Show first two destinations as popular
+    final popularDestinations = _destinations.take(2).toList();
+
     return Column(
       children: [
         Padding(
@@ -237,25 +270,20 @@ class HomeScreen extends StatelessWidget {
         const SizedBox(height: 16),
         SizedBox(
           height: 260,
-          child: ListView(
+          child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: [
-              _buildDestinationCard(
+            itemCount: popularDestinations.length,
+            itemBuilder: (context, index) {
+              final dest = popularDestinations[index];
+              return _buildDestinationCard(
                 context,
-                title: 'Marina Beach',
-                location: 'Kalianda, Lampung Selatan',
-                imagePath: 'assets/images/NusaPenidaCard.png', // Using available asset
-                rating: 4.8,
-              ),
-              _buildDestinationCard(
-                context,
-                title: 'Gunung Bromo',
-                location: 'Jawa Timur',
-                imagePath: 'assets/images/BromoCard.png',
-                rating: 4.8,
-              ),
-            ],
+                title: dest.title,
+                location: dest.location,
+                imagePath: dest.image,
+                rating: dest.rating,
+              );
+            },
           ),
         ),
       ],
@@ -263,6 +291,9 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildPerjalananTerakhir(BuildContext context) {
+    // Show third destination as recent trip
+    final recentDestinations = _destinations.skip(2).take(1).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -280,18 +311,20 @@ class HomeScreen extends StatelessWidget {
         const SizedBox(height: 16),
         SizedBox(
           height: 260,
-          child: ListView(
+          child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: [
-              _buildDestinationCard(
+            itemCount: recentDestinations.length,
+            itemBuilder: (context, index) {
+              final dest = recentDestinations[index];
+              return _buildDestinationCard(
                 context,
-                title: 'Tari Kecak',
-                location: 'Pura Luhur Uluwatu, Bali',
-                imagePath: 'assets/images/FestivalCard.png',
-                rating: 4.8,
-              ),
-            ],
+                title: dest.title,
+                location: dest.location,
+                imagePath: dest.image,
+                rating: dest.rating,
+              );
+            },
           ),
         ),
       ],
