@@ -20,6 +20,7 @@ class _PlanScreenState extends State<PlanScreen> {
   // Controllers
   final TextEditingController _budgetController = TextEditingController();
   final TextEditingController _bbmController = TextEditingController();
+  final TextEditingController _jarakController = TextEditingController();
   final TextEditingController _tiketController = TextEditingController();
   final TextEditingController _parkirController = TextEditingController();
   final TextEditingController _makanController = TextEditingController();
@@ -62,6 +63,7 @@ class _PlanScreenState extends State<PlanScreen> {
   void dispose() {
     _budgetController.dispose();
     _bbmController.dispose();
+    _jarakController.dispose();
     _tiketController.dispose();
     _parkirController.dispose();
     _makanController.dispose();
@@ -72,7 +74,7 @@ class _PlanScreenState extends State<PlanScreen> {
   void _hitungBudget() {
     if (_selectedDestination == null) return;
     
-    double jarak = _selectedDestination!.jarak;
+    double jarak = double.tryParse(_jarakController.text) ?? 0;
 
     // 1. BBM
     double konsumsiBbm = double.tryParse(_bbmController.text) ?? 0;
@@ -365,6 +367,13 @@ class _PlanScreenState extends State<PlanScreen> {
                   'Konsumsi BBM',
                   'Contoh: 40 km/l',
                   controller: _bbmController,
+                  isNumber: true,
+                ),
+                const SizedBox(height: 16),
+                _buildInputField(
+                  'Jarak Tempuh',
+                  'Contoh: 15 km',
+                  controller: _jarakController,
                   isNumber: true,
                 ),
                 const SizedBox(height: 24),
@@ -665,7 +674,7 @@ class _PlanScreenState extends State<PlanScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: _buildResultBox('Jarak', '${_selectedDestination?.jarak.toInt() ?? 0} km'),
+                      child: _buildResultBox('Jarak', '${double.tryParse(_jarakController.text)?.toInt() ?? 0} km'),
                     ),
                     const SizedBox(width: 16),
                     Expanded(child: _buildResultBox('Waktu', '${_selectedDestination?.waktu ?? 0} Jam')),

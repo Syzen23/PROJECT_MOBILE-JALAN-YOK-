@@ -1,4 +1,4 @@
-package com.example.jalanyok
+package com.mobile1.jalanyok
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -194,14 +194,32 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   GestureDetector(
-                    onTap: () => context.go('/home'),
+                    onTap: () async {
+                      final user = await AuthService.loginWithGoogle();
+                      if (!context.mounted) return;
+                      if (user != null) {
+                        if (user.role == 'admin') {
+                          context.go('/admin_home');
+                        } else {
+                          context.go('/home');
+                        }
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Login dengan Google dibatalkan atau gagal.')),
+                        );
+                      }
+                    },
                     child: _buildSocialButton(
                       SvgPicture.asset('assets/images/Google.svg', width: 24, height: 24),
                     ),
                   ),
                   const SizedBox(width: 24),
                   GestureDetector(
-                    onTap: () => context.go('/home'),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Fitur login dengan No HP dimatikan. Silakan login dengan email dan password.')),
+                      );
+                    },
                     child: _buildSocialButton(
                       SvgPicture.asset('assets/images/Handphone.svg', width: 24, height: 24),
                     ),

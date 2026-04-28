@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../../../core/models/destination_model.dart';
 
@@ -17,13 +19,12 @@ class _DestinationFormScreenState extends State<DestinationFormScreen> {
   
   late TextEditingController _titleCtrl;
   late TextEditingController _locationCtrl;
-  late TextEditingController _imageCtrl;
   late TextEditingController _ratingCtrl;
   late TextEditingController _visitorsCtrl;
   late TextEditingController _tiketCtrl;
-  late TextEditingController _jarakCtrl;
   late TextEditingController _waktuCtrl;
 
+  String? _imagePath;
   bool _isLoading = false;
 
   @override
@@ -32,11 +33,10 @@ class _DestinationFormScreenState extends State<DestinationFormScreen> {
     final dest = widget.destination;
     _titleCtrl = TextEditingController(text: dest?.title ?? '');
     _locationCtrl = TextEditingController(text: dest?.location ?? '');
-    _imageCtrl = TextEditingController(text: dest?.image ?? 'assets/images/Pantai.png');
+    _imagePath = dest?.image;
     _ratingCtrl = TextEditingController(text: dest?.rating.toString() ?? '4.5');
     _visitorsCtrl = TextEditingController(text: dest?.visitors ?? '1K+ Pengunjung');
     _tiketCtrl = TextEditingController(text: dest?.tiket.toString() ?? '10000');
-    _jarakCtrl = TextEditingController(text: dest?.jarak.toString() ?? '10');
     _waktuCtrl = TextEditingController(text: dest?.waktu.toString() ?? '1');
   }
 
@@ -44,17 +44,29 @@ class _DestinationFormScreenState extends State<DestinationFormScreen> {
   void dispose() {
     _titleCtrl.dispose();
     _locationCtrl.dispose();
-    _imageCtrl.dispose();
     _ratingCtrl.dispose();
     _visitorsCtrl.dispose();
     _tiketCtrl.dispose();
-    _jarakCtrl.dispose();
     _waktuCtrl.dispose();
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _imagePath = pickedFile.path;
+      });
+    }
+  }
+
   Future<void> _saveDestination() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_imagePath == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih gambar terlebih dahulu')));
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -62,11 +74,10 @@ class _DestinationFormScreenState extends State<DestinationFormScreen> {
       id: widget.destination?.id,
       title: _titleCtrl.text.trim(),
       location: _locationCtrl.text.trim(),
-      image: _imageCtrl.text.trim(),
+      image: _imagePath!,
       rating: double.tryParse(_ratingCtrl.text) ?? 4.0,
       visitors: _visitorsCtrl.text.trim(),
       tiket: double.tryParse(_tiketCtrl.text) ?? 0,
-      jarak: double.tryParse(_jarakCtrl.text) ?? 0,
       waktu: int.tryParse(_waktuCtrl.text) ?? 1,
     );
 
@@ -94,13 +105,39 @@ class _DestinationFormScreenState extends State<DestinationFormScreen> {
           key: _formKey,
           child: Column(
             children: [
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  height: 150,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey),
+                  ),
+                  child: _imagePath != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: _imagePath!.startsWith('assets/')
+                              ? Image.asset(_imagePath!, fit: BoxFit.cover)
+                              : Image.file(File(_imagePath!), fit: BoxFit.cover),
+                        )
+                      : const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
+                            SizedBox(height: 8),
+                            Text('Pilih Foto', style: TextStyle(color: Colors.grey)),
+                          ],
+                        ),
+                ),
+              ),
+              const SizedBox(height: 16),
               _buildField(_titleCtrl, 'Nama Destinasi'),
               _buildField(_locationCtrl, 'Lokasi'),
-              _buildField(_imageCtrl, 'Path Gambar (assets/images/...)'),
               _buildField(_ratingCtrl, 'Rating', isNumber: true),
               _buildField(_visitorsCtrl, 'Pengunjung (contoh: 1K+ Pengunjung)'),
               _buildField(_tiketCtrl, 'Harga Tiket (Rp)', isNumber: true),
-              _buildField(_jarakCtrl, 'Jarak (km)', isNumber: true),
               _buildField(_waktuCtrl, 'Waktu (Jam)', isNumber: true),
               const SizedBox(height: 32),
               SizedBox(

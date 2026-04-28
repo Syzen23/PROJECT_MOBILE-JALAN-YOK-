@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../../../core/services/auth_service.dart';
@@ -48,7 +49,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 16),
                   child: ListTile(
-                    leading: CircleAvatar(backgroundImage: AssetImage(item['image'] ?? 'assets/images/Pantai.png')),
+                    leading: CircleAvatar(
+                      backgroundImage: (item['image'] as String? ?? 'assets/images/Pantai.png').startsWith('assets/')
+                          ? AssetImage(item['image'] ?? 'assets/images/Pantai.png')
+                          : FileImage(File(item['image'])) as ImageProvider,
+                    ),
                     title: Text(item['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text('Budget: Rp ${item['total_budget']} • Via: ${item['transport']}\nTanggal: ${item['date']}'),
                     isThreeLine: true,

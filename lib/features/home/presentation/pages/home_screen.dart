@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -376,12 +377,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     topLeft: Radius.circular(16),
                     topRight: Radius.circular(16),
                   ),
-                  child: Image.asset(
-                    imagePath,
-                    height: 110,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
+                  child: imagePath.startsWith('assets/')
+                      ? Image.asset(
+                          imagePath,
+                          height: 110,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        )
+                      : Image.file(
+                          File(imagePath),
+                          height: 110,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                 ),
                 Positioned(
                   top: 8,

@@ -6,7 +6,6 @@ class Destination {
   final double rating;
   final String visitors;
   final double tiket;
-  final double jarak;
   final int waktu; // dalam jam
 
   Destination({
@@ -17,7 +16,6 @@ class Destination {
     required this.rating,
     required this.visitors,
     required this.tiket,
-    required this.jarak,
     required this.waktu,
   });
 
@@ -30,7 +28,6 @@ class Destination {
       'rating': rating,
       'visitors': visitors,
       'tiket': tiket,
-      'jarak': jarak,
       'waktu': waktu,
     };
   }
@@ -41,11 +38,10 @@ class Destination {
       title: map['title'],
       location: map['location'],
       image: map['image'],
-      rating: map['rating'],
-      visitors: map['visitors'],
-      tiket: map['tiket'],
-      jarak: map['jarak'],
-      waktu: map['waktu'],
+      rating: map['rating'] as double,
+      visitors: map['visitors'] as String,
+      tiket: map['tiket'] as double,
+      waktu: map['waktu'] as int,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:jalanyok2/core/services/auth_service.dart';
 
 class AuthOptionsScreen extends StatelessWidget {
   const AuthOptionsScreen({super.key});
@@ -43,8 +44,20 @@ class AuthOptionsScreen extends StatelessWidget {
 
               // Continue with Google Button
               OutlinedButton.icon(
-                onPressed: () {
-                  context.go('/home');
+                onPressed: () async {
+                  final user = await AuthService.loginWithGoogle();
+                  if (!context.mounted) return;
+                  if (user != null) {
+                    if (user.role == 'admin') {
+                      context.go('/admin_home');
+                    } else {
+                      context.go('/home');
+                    }
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Login dengan Google dibatalkan atau gagal.')),
+                    );
+                  }
                 },
                 icon: SvgPicture.asset(
                   'assets/images/Google.svg',
@@ -72,7 +85,9 @@ class AuthOptionsScreen extends StatelessWidget {
               // Continue with Phone Button
               OutlinedButton.icon(
                 onPressed: () {
-                  context.go('/home');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Fitur login dengan No HP dimatikan. Silakan login dengan password.')),
+                  );
                 },
                 icon: SvgPicture.asset(
                   'assets/images/Handphone.svg',

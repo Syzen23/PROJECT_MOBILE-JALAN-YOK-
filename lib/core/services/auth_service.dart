@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 import '../database/database_helper.dart';
 
@@ -59,5 +60,43 @@ class AuthService {
       await saveUserSession(registeredUser);
     }
     return registeredUser;
+  }
+
+  static bool _isGoogleSignInInitialized = false;
+
+  static Future<void> _initGoogleSignIn() async {
+    if (!_isGoogleSignInInitialized) {
+      await GoogleSignIn.instance.initialize(
+        serverClientId: '652784232227-qht9r3d3ns3hd608rv1lgpjbbj9om84f.apps.googleusercontent.com',
+      );
+      _isGoogleSignInInitialized = true;
+    }
+  }
+
+  static Future<User?> loginWithGoogle() async {
+    try {
+      await _initGoogleSignIn();
+      
+      final GoogleSignInAccount googleUser = await GoogleSignIn.instance.authenticate();
+
+      final String email = googleUser.email;
+      final String name = googleUser.displayName ?? 'Google User';
+
+      // Check if user already exists in SQLite
+      User? localUser = await DatabaseHelper.instance.getUserByEmail(email);
+
+      if (localUser == null) {
+        // User doesn't exist, register them with a dummy password
+        localUser = await register(name, email, 'google_login_dummy_password');
+      } else {
+        // User exists, just save session
+        await saveUserSession(localUser);
+      }
+
+      return localUser;
+    } catch (e) {
+      print('Error logging in with Google: $e');
+      return null;
+    }
   }
 }

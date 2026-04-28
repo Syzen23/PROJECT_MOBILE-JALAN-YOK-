@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:go_router/go_router.dart';
-import 'package:jalanyok2/core/database/database_helper.dart';
-import 'package:jalanyok2/core/models/destination_model.dart';
+import '../../../../core/database/database_helper.dart';
+import '../../../../core/models/destination_model.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -283,20 +284,35 @@ class _SearchScreenState extends State<SearchScreen> {
             padding: const EdgeInsets.all(10.0),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                item.image,
-                width: 80,
-                height: 90,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 80,
-                    height: 90,
-                    color: Colors.grey.shade300,
-                    child: const Icon(Icons.image, color: Colors.grey),
-                  );
-                },
-              ),
+              child: item.image.startsWith('assets/')
+                  ? Image.asset(
+                      item.image,
+                      width: 80,
+                      height: 90,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 80,
+                          height: 90,
+                          color: Colors.grey.shade300,
+                          child: const Icon(Icons.image, color: Colors.grey),
+                        );
+                      },
+                    )
+                  : Image.file(
+                      File(item.image),
+                      width: 80,
+                      height: 90,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 80,
+                          height: 90,
+                          color: Colors.grey.shade300,
+                          child: const Icon(Icons.image, color: Colors.grey),
+                        );
+                      },
+                    ),
             ),
           ),
           

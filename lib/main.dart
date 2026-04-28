@@ -12,7 +12,7 @@ import 'features/profile/presentation/pages/profile_screen.dart';
 import 'features/search/presentation/pages/search_screen.dart';
 import 'widgets/scaffold_with_nav_bar.dart';
 
-// Admin imports
+import 'package:firebase_core/firebase_core.dart';
 import 'features/admin/presentation/widgets/admin_scaffold.dart';
 import 'features/admin/presentation/pages/admin_dashboard_screen.dart';
 import 'features/admin/presentation/pages/admin_destinations_screen.dart';
@@ -42,7 +42,9 @@ final GlobalKey<NavigatorState> _shellNavigatorAdminDestinations =
 final GlobalKey<NavigatorState> _shellNavigatorAdminUsers = 
     GlobalKey<NavigatorState>(debugLabel: 'shellAdminUsers');
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 

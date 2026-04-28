@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "652784232227",
+    "project_id": "jalanyokmobile1",
+    "storage_bucket": "jalanyokmobile1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:652784232227:android:a80358c39ca7704dbf8e96",
+        "android_client_info": {
+          "package_name": "com.mobile1.jalanyok"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCq6YrWwUgauPOEHHPugbxq_NvPexp3T6w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

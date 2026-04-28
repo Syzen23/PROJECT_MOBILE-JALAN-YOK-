@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/database/database_helper.dart';
@@ -52,7 +53,9 @@ class _AdminDestinationsScreenState extends State<AdminDestinationsScreen> {
                 final dest = destinations[index];
                 return ListTile(
                   leading: CircleAvatar(
-                    backgroundImage: AssetImage(dest.image),
+                    backgroundImage: dest.image.startsWith('assets/')
+                        ? AssetImage(dest.image)
+                        : FileImage(File(dest.image)) as ImageProvider,
                     onBackgroundImageError: (exception, stackTrace) {},
                   ),
                   title: Text(dest.title, style: const TextStyle(fontWeight: FontWeight.bold)),

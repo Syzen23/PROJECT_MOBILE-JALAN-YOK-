@@ -24,9 +24,20 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 3,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
+  }
+
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    // If upgrading to version 3, drop and recreate
+    if (oldVersion < 3) {
+      await db.execute('DROP TABLE IF EXISTS destinations');
+      await db.execute('DROP TABLE IF EXISTS users');
+      await db.execute('DROP TABLE IF EXISTS trip_history');
+      await _createDB(db, newVersion);
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -44,7 +55,6 @@ CREATE TABLE destinations (
   rating $doubleType,
   visitors $textType,
   tiket $doubleType,
-  jarak $doubleType,
   waktu $intType
   )
 ''');
@@ -77,7 +87,7 @@ CREATE TABLE trip_history (
       'password': 'password123',
       'role': 'admin',
     });
-    
+
     await db.insert('users', {
       'name': 'Regular User',
       'email': 'user@jalanyok.com',
@@ -94,7 +104,6 @@ CREATE TABLE trip_history (
         rating: 4.8,
         visitors: '1K+ Pengunjung',
         tiket: 45000.0,
-        jarak: 120.0,
         waktu: 3,
       ),
       Destination(
@@ -104,7 +113,6 @@ CREATE TABLE trip_history (
         rating: 4.9,
         visitors: '5K+ Pengunjung',
         tiket: 35000.0,
-        jarak: 850.0,
         waktu: 12,
       ),
       Destination(
@@ -114,7 +122,6 @@ CREATE TABLE trip_history (
         rating: 4.8,
         visitors: '2K+ Pengunjung',
         tiket: 150000.0,
-        jarak: 1200.0,
         waktu: 24,
       ),
       Destination(
@@ -124,7 +131,6 @@ CREATE TABLE trip_history (
         rating: 4.9,
         visitors: '3K+ Pengunjung',
         tiket: 25000.0,
-        jarak: 1250.0,
         waktu: 25,
       ),
       Destination(
@@ -134,7 +140,6 @@ CREATE TABLE trip_history (
         rating: 4.7,
         visitors: '1K+ Pengunjung',
         tiket: 50000.0,
-        jarak: 2000.0,
         waktu: 48,
       ),
     ];
@@ -155,7 +160,6 @@ CREATE TABLE trip_history (
       rating: destination.rating,
       visitors: destination.visitors,
       tiket: destination.tiket,
-      jarak: destination.jarak,
       waktu: destination.waktu,
     );
   }
@@ -188,11 +192,7 @@ CREATE TABLE trip_history (
 
   Future<int> deleteDestination(int id) async {
     final db = await instance.database;
-    return await db.delete(
-      'destinations',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('destinations', where: 'id = ?', whereArgs: [id]);
   }
 
   // --- User Operations ---
@@ -209,10 +209,27 @@ CREATE TABLE trip_history (
     return null;
   }
 
+  Future<User?> getUserByEmail(String email) async {
+    final db = await instance.database;
+    final maps = await db.query(
+      'users',
+      where: 'email = ?',
+      whereArgs: [email],
+    );
+    if (maps.isNotEmpty) {
+      return User.fromMap(maps.first);
+    }
+    return null;
+  }
+
   Future<User?> register(User user) async {
     final db = await instance.database;
     // Check if email exists
-    final exists = await db.query('users', where: 'email = ?', whereArgs: [user.email]);
+    final exists = await db.query(
+      'users',
+      where: 'email = ?',
+      whereArgs: [user.email],
+    );
     if (exists.isNotEmpty) return null;
 
     final id = await db.insert('users', user.toMap());
@@ -248,13 +265,16 @@ CREATE TABLE trip_history (
   Future<List<Map<String, dynamic>>> getTripHistoryForUser(int userId) async {
     final db = await instance.database;
     // Join with destinations to get title and image
-    final result = await db.rawQuery('''
+    final result = await db.rawQuery(
+      '''
       SELECT h.*, d.title, d.image, d.location 
       FROM trip_history h
       JOIN destinations d ON h.destination_id = d.id
       WHERE h.user_id = ?
       ORDER BY h.id DESC
-    ''', [userId]);
+    ''',
+      [userId],
+    );
     return result;
   }
 
