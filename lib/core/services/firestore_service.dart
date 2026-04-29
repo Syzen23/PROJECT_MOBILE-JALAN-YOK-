@@ -87,12 +87,22 @@ class FirestoreService {
       'email': 'admin@jalanyok.com',
       'password': 'password123',
       'role': 'admin',
+      'phone_number': '081234567890',
+      'age': 25,
+      'date_of_birth': '1999-01-01',
+      'gender': 'Laki-laki',
+      'address': 'Jl. Admin No. 1',
     });
     await _usersCol.add({
       'name': 'Regular User',
       'email': 'user@jalanyok.com',
       'password': 'password123',
       'role': 'user',
+      'phone_number': '089876543210',
+      'age': 20,
+      'date_of_birth': '2004-05-05',
+      'gender': 'Perempuan',
+      'address': 'Jl. User No. 2',
     });
   }
 
@@ -149,6 +159,17 @@ class FirestoreService {
   // ============================================================
   // USER OPERATIONS
   // ============================================================
+  Future<void> updateUser(User user) async {
+    if (user.id == null) return;
+    final map = user.toMap();
+    map.remove('id');
+    await _usersCol.doc(user.id).update(map);
+  }
+
+  Future<void> updatePassword(String userId, String newPassword) async {
+    await _usersCol.doc(userId).update({'password': newPassword});
+  }
+
   Future<User?> login(String email, String password) async {
     final snapshot = await _usersCol
         .where('email', isEqualTo: email)
@@ -188,6 +209,11 @@ class FirestoreService {
       email: user.email,
       password: user.password,
       role: user.role,
+      phoneNumber: user.phoneNumber,
+      age: user.age,
+      dateOfBirth: user.dateOfBirth,
+      gender: user.gender,
+      address: user.address,
     );
   }
 

@@ -1,9 +1,12 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jalanyok2/core/services/firestore_service.dart';
+import 'package:jalanyok2/core/services/auth_service.dart';
 import 'package:jalanyok2/core/models/destination_model.dart';
+import 'package:jalanyok2/core/models/user_model.dart';
 import 'destination_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -17,11 +20,15 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Destination> _destinations = [];
   bool _isLoading = true;
 
+
   @override
   void initState() {
     super.initState();
     _loadDestinations();
+    AuthService.getCurrentUser(); // This will trigger the notifier
   }
+
+
 
   Future<void> _loadDestinations() async {
     final data = await FirestoreService.instance.getAllDestinations();
@@ -101,46 +108,57 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Column(
+                ValueListenableBuilder<User?>(
+                  valueListenable: AuthService.userNotifier,
+                  builder: (context, user, child) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Hi, Ma\'ruf',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Hi, ${user?.name ?? 'User'}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Selamat datang di JalanYok.',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Mau jalan ke mana hari ini?',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Selamat datang di JalanYok.',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Mau jalan ke mana hari ini?',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 14,
-                          ),
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.white,
+                          backgroundImage: (user?.profileImageUrl != null && user!.profileImageUrl!.isNotEmpty)
+                              ? MemoryImage(base64Decode(user.profileImageUrl!))
+                              : null,
+                          child: (user?.profileImageUrl == null || user!.profileImageUrl!.isEmpty)
+                              ? const Icon(Icons.person, color: Colors.grey)
+                              : null,
                         ),
                       ],
-                    ),
-                    const CircleAvatar(
-                      radius: 20,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.person, color: Colors.grey),
-                    ),
-                  ],
+                    );
+                  },
                 ),
+
                 const SizedBox(height: 40),
                 
                 // Search Bar

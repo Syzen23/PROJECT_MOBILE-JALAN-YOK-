@@ -9,15 +9,20 @@ import 'features/home/presentation/pages/home_screen.dart';
 import 'features/plan/presentation/pages/plan_screen.dart';
 import 'features/history/presentation/pages/history_screen.dart';
 import 'features/profile/presentation/pages/profile_screen.dart';
+import 'features/profile/presentation/pages/edit_profile_screen.dart';
+import 'features/profile/presentation/pages/change_password_screen.dart';
+import 'features/auth/presentation/pages/complete_profile_screen.dart';
 import 'features/search/presentation/pages/search_screen.dart';
 import 'widgets/scaffold_with_nav_bar.dart';
+import 'features/profile/presentation/pages/about_app_screen.dart';
+import 'features/admin/presentation/pages/admin_users_screen.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'core/services/firestore_service.dart';
 import 'features/admin/presentation/widgets/admin_scaffold.dart';
 import 'features/admin/presentation/pages/admin_dashboard_screen.dart';
 import 'features/admin/presentation/pages/admin_destinations_screen.dart';
-import 'features/admin/presentation/pages/admin_users_screen.dart';
+
 import 'features/admin/presentation/pages/destination_form_screen.dart';
 import 'core/models/destination_model.dart';
 
@@ -36,11 +41,11 @@ final GlobalKey<NavigatorState> _shellNavigatorProfile =
     GlobalKey<NavigatorState>(debugLabel: 'shellProfile');
 
 // Admin Navigators
-final GlobalKey<NavigatorState> _shellNavigatorAdminDashboard = 
+final GlobalKey<NavigatorState> _shellNavigatorAdminDashboard =
     GlobalKey<NavigatorState>(debugLabel: 'shellAdminDashboard');
-final GlobalKey<NavigatorState> _shellNavigatorAdminDestinations = 
+final GlobalKey<NavigatorState> _shellNavigatorAdminDestinations =
     GlobalKey<NavigatorState>(debugLabel: 'shellAdminDestinations');
-final GlobalKey<NavigatorState> _shellNavigatorAdminUsers = 
+final GlobalKey<NavigatorState> _shellNavigatorAdminUsers =
     GlobalKey<NavigatorState>(debugLabel: 'shellAdminUsers');
 
 void main() async {
@@ -48,6 +53,31 @@ void main() async {
   await Firebase.initializeApp();
   await FirestoreService.instance.seedIfEmpty();
   runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'JalanYok',
+      debugShowCheckedModeBanner: false,
+      themeMode: ThemeMode.light,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: const Color(0xFF007AFF),
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF8F9FA),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+        ),
+      ),
+      routerConfig: _router,
+    );
+  }
 }
 
 final GoRouter _router = GoRouter(
@@ -96,6 +126,30 @@ final GoRouter _router = GoRouter(
       path: '/search',
       builder: (BuildContext context, GoRouterState state) {
         return const SearchScreen();
+      },
+    ),
+    GoRoute(
+      path: '/edit-profile',
+      builder: (BuildContext context, GoRouterState state) {
+        return const EditProfileScreen();
+      },
+    ),
+    GoRoute(
+      path: '/about',
+      builder: (BuildContext context, GoRouterState state) {
+        return const AboutAppScreen();
+      },
+    ),
+    GoRoute(
+      path: '/complete-profile',
+      builder: (BuildContext context, GoRouterState state) {
+        return const CompleteProfileScreen();
+      },
+    ),
+    GoRoute(
+      path: '/change-password',
+      builder: (BuildContext context, GoRouterState state) {
+        return const ChangePasswordScreen();
       },
     ),
     StatefulShellRoute.indexedStack(
@@ -189,38 +243,3 @@ final GoRouter _router = GoRouter(
     ),
   ],
 );
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp.router(
-      routerConfig: _router,
-      title: 'JalanYok',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF007AFF),
-          primary: const Color(0xFF007AFF),
-          surface: const Color(0xFFFFFFFF),
-        ),
-        scaffoldBackgroundColor: const Color(0xFFFFFFFF),
-        fontFamily: 'Inter',
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0),
-            ),
-          ),
-        ),
-        cardTheme: CardThemeData(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12.0),
-          ),
-        ),
-        useMaterial3: true,
-      ),
-    );
-  }
-}

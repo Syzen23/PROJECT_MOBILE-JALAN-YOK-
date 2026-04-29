@@ -198,12 +198,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       final user = await AuthService.loginWithGoogle();
                       if (!context.mounted) return;
                       if (user != null) {
-                        if (user.role == 'admin') {
+                        if (!AuthService.isProfileComplete(user)) {
+                          context.go('/complete-profile');
+                        } else if (user.role == 'admin') {
                           context.go('/admin_home');
                         } else {
                           context.go('/home');
                         }
                       } else {
+
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Login dengan Google dibatalkan atau gagal.')),
                         );
