@@ -134,7 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 40),
                       _buildLogoutButton(),
                       const SizedBox(height: 12),
-                      _buildDeleteAccountButton(currentUser.id!),
+
                       const SizedBox(height: 40),
                     ],
                   ),
@@ -269,15 +269,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildDeleteAccountButton(String userId) {
-    return SizedBox(
-      width: double.infinity,
-      child: TextButton(
-        onPressed: () => _confirmDeleteAccount(context, userId),
-        child: const Text('Hapus Akun Permanen', style: TextStyle(color: Colors.grey, decoration: TextDecoration.underline)),
-      ),
-    );
-  }
+
 
 
   Future<void> _confirmLogout(BuildContext context) async {
@@ -298,23 +290,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _confirmDeleteAccount(BuildContext context, String userId) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Hapus Akun Permanen', style: TextStyle(color: Colors.red)),
-        content: const Text('Tindakan ini tidak dapat dibatalkan. Semua data Anda akan dihapus permanen.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus', style: TextStyle(color: Colors.red))),
-        ],
-      ),
-    );
-    if (confirm == true) {
-      await AuthService.deleteAccount(userId);
-      if (context.mounted) context.go('/login');
-    }
-  }
+
 
 
   Widget _buildInfoCard({required List<Widget> items}) {

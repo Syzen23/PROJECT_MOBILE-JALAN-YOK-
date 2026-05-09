@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/user_model.dart';
 import 'firestore_service.dart';
 
@@ -132,10 +132,7 @@ class AuthService {
     await FirestoreService.instance.updatePassword(userId, newPassword);
   }
 
-  static Future<void> deleteAccount(String userId) async {
-    await FirebaseFirestore.instance.collection('users').doc(userId).delete();
-    await logout();
-  }
+
 
   static bool _isGoogleSignInInitialized = false;
 
