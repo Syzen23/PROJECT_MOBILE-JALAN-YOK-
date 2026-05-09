@@ -3,7 +3,7 @@ import 'package:jalanyok2/core/services/firestore_service.dart';
 import 'package:jalanyok2/core/models/destination_model.dart';
 import 'package:jalanyok2/core/services/auth_service.dart';
 import 'package:jalanyok2/core/models/trip_history_model.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'map_screen.dart';
 
 class PlanScreen extends StatefulWidget {
   const PlanScreen({super.key});
@@ -137,19 +137,14 @@ class _PlanScreenState extends State<PlanScreen> with SingleTickerProviderStateM
     }
   }
 
-  Future<void> _bukaPeta() async {
+  void _bukaPeta() {
     if (_selectedDestination == null) return;
-    final query = Uri.encodeComponent('${_selectedDestination!.title} ${_selectedDestination!.location}');
-    final urlString = 'https://www.google.com/maps/dir/?api=1&destination=$query';
-    final uri = Uri.parse(urlString);
-    
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal membuka aplikasi Peta.')));
-      }
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapScreen(destination: _selectedDestination!),
+      ),
+    );
   }
 
   String _formatCurrency(double amount) {
