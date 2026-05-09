@@ -80,13 +80,19 @@ class _MapScreenState extends State<MapScreen> {
       throw Exception('Izin lokasi ditolak permanen. Buka pengaturan aplikasi.');
     }
 
+    // Coba ambil lokasi terakhir yang diketahui (lebih cepat untuk emulator)
+    Position? lastKnown = await Geolocator.getLastKnownPosition();
+    if (lastKnown != null) {
+      return lastKnown;
+    }
+
     return await Geolocator.getCurrentPosition();
   }
 
   Future<LatLng?> _geocodeDestination(String query) async {
     final url = Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=1');
     try {
-      final response = await http.get(url, headers: {'User-Agent': 'JalanYokApp/1.0'});
+      final response = await http.get(url, headers: {'User-Agent': 'JalanYokApp/1.0'}).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final List data = json.decode(response.body);
         if (data.isNotEmpty) {
@@ -100,9 +106,10 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _fetchRoute(LatLng start, LatLng end) async {
-    final url = Uri.parse('http://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?overview=full&geometries=geojson');
+    // Menggunakan overview=simplified agar tidak mendownload puluhan ribu titik yang bikin ngelag (ANR)
+    final url = Uri.parse('http://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?overview=simplified&geometries=geojson');
     try {
-      final response = await http.get(url);
+      final response = await http.get(url).timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['routes'] != null && data['routes'].isNotEmpty) {
