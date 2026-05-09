@@ -13,6 +13,7 @@ import 'features/profile/presentation/pages/edit_profile_screen.dart';
 import 'features/profile/presentation/pages/change_password_screen.dart';
 import 'features/auth/presentation/pages/complete_profile_screen.dart';
 import 'features/search/presentation/pages/search_screen.dart';
+import 'features/chatbot/presentation/pages/chatbot_screen.dart';
 import 'widgets/scaffold_with_nav_bar.dart';
 import 'features/profile/presentation/pages/about_app_screen.dart';
 import 'features/admin/presentation/pages/admin_users_screen.dart';
@@ -31,6 +32,9 @@ final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
 );
 final GlobalKey<NavigatorState> _shellNavigatorHome = GlobalKey<NavigatorState>(
   debugLabel: 'shellHome',
+);
+final GlobalKey<NavigatorState> _shellNavigatorChatbot = GlobalKey<NavigatorState>(
+  debugLabel: 'shellChatbot',
 );
 final GlobalKey<NavigatorState> _shellNavigatorPlan = GlobalKey<NavigatorState>(
   debugLabel: 'shellPlan',
@@ -167,7 +171,17 @@ final GoRouter _router = GoRouter(
             ),
           ],
         ),
-        // Tab 2: Rencana
+        // Tab 1: Chatbot
+        StatefulShellBranch(
+          navigatorKey: _shellNavigatorChatbot,
+          routes: [
+            GoRoute(
+              path: '/chatbot',
+              builder: (context, state) => const ChatbotScreen(),
+            ),
+          ],
+        ),
+        // Tab 2: Rencana (Plus)
         StatefulShellBranch(
           navigatorKey: _shellNavigatorPlan,
           routes: [

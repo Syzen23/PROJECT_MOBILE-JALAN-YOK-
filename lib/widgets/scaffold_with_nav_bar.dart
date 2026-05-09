@@ -46,10 +46,22 @@ class ScaffoldWithNavBar extends StatelessWidget {
               activeIcon: _buildIcon('assets/images/Home.svg', true),
               label: 'Beranda',
             ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 24),
+              activeIcon: Icon(Icons.chat, color: Color(0xFF007AFF), size: 24),
+              label: 'Chatbot',
+            ),
             BottomNavigationBarItem(
-              icon: _buildIcon('assets/images/Maps.svg', false),
-              activeIcon: _buildIcon('assets/images/Maps.svg', true),
-              label: 'Rencana',
+              icon: Container(
+                margin: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.all(12),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF007AFF),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.add, color: Colors.white, size: 24),
+              ),
+              label: '',
             ),
             BottomNavigationBarItem(
               icon: _buildIcon('assets/images/History.svg', false),

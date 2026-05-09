@@ -19,25 +19,27 @@ class AuthService {
 
   static final ValueNotifier<User?> userNotifier = ValueNotifier<User?>(null);
 
-
   static Future<bool> saveUserSession(User user) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyUserId, user.id!);
     await prefs.setString(_keyUserName, user.name);
     await prefs.setString(_keyUserEmail, user.email);
     await prefs.setString(_keyUserRole, user.role);
-    if (user.phoneNumber != null) await prefs.setString(_keyUserPhone, user.phoneNumber!);
+    if (user.phoneNumber != null)
+      await prefs.setString(_keyUserPhone, user.phoneNumber!);
     if (user.age != null) await prefs.setInt(_keyUserAge, user.age!);
-    if (user.dateOfBirth != null) await prefs.setString(_keyUserDOB, user.dateOfBirth!);
-    if (user.gender != null) await prefs.setString(_keyUserGender, user.gender!);
-    if (user.address != null) await prefs.setString(_keyUserAddress, user.address!);
-    if (user.profileImageUrl != null) await prefs.setString(_keyUserProfileImage, user.profileImageUrl!);
-    
+    if (user.dateOfBirth != null)
+      await prefs.setString(_keyUserDOB, user.dateOfBirth!);
+    if (user.gender != null)
+      await prefs.setString(_keyUserGender, user.gender!);
+    if (user.address != null)
+      await prefs.setString(_keyUserAddress, user.address!);
+    if (user.profileImageUrl != null)
+      await prefs.setString(_keyUserProfileImage, user.profileImageUrl!);
+
     userNotifier.value = user;
     return true;
   }
-
-
 
   static Future<User?> getCurrentUser() async {
     final prefs = await SharedPreferences.getInstance();
@@ -61,8 +63,6 @@ class AuthService {
     return user;
   }
 
-
-
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyUserId);
@@ -77,8 +77,6 @@ class AuthService {
     await prefs.remove(_keyUserProfileImage);
     userNotifier.value = null;
   }
-
-
 
   static Future<User?> login(String email, String password) async {
     final user = await FirestoreService.instance.login(email, password);
@@ -122,24 +120,23 @@ class AuthService {
   }
 
   static bool isProfileComplete(User user) {
-    return user.phoneNumber != null && 
-           user.dateOfBirth != null && 
-           user.gender != null && 
-           user.address != null;
+    return user.phoneNumber != null &&
+        user.dateOfBirth != null &&
+        user.gender != null &&
+        user.address != null;
   }
 
   static Future<void> changePassword(String userId, String newPassword) async {
     await FirestoreService.instance.updatePassword(userId, newPassword);
   }
 
-
-
   static bool _isGoogleSignInInitialized = false;
 
   static Future<void> _initGoogleSignIn() async {
     if (!_isGoogleSignInInitialized) {
       await GoogleSignIn.instance.initialize(
-        serverClientId: '652784232227-qht9r3d3ns3hd608rv1lgpjbbj9om84f.apps.googleusercontent.com',
+        serverClientId:
+            '652784232227-qht9r3d3ns3hd608rv1lgpjbbj9om84f.apps.googleusercontent.com',
       );
       _isGoogleSignInInitialized = true;
     }
@@ -148,9 +145,9 @@ class AuthService {
   static Future<User?> loginWithGoogle() async {
     try {
       await _initGoogleSignIn();
-      
-      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
 
+      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance
+          .authenticate();
 
       if (googleUser == null) return null;
 
@@ -158,13 +155,15 @@ class AuthService {
       final String name = googleUser.displayName ?? 'Google User';
 
       // Check if user already exists in Firestore
-      User? existingUser = await FirestoreService.instance.getUserByEmail(email);
+      User? existingUser = await FirestoreService.instance.getUserByEmail(
+        email,
+      );
 
       if (existingUser == null) {
         // User doesn't exist, register them with a dummy password
         existingUser = await register(
-          name: name, 
-          email: email, 
+          name: name,
+          email: email,
           password: 'google_login_dummy_password',
         );
       } else {
