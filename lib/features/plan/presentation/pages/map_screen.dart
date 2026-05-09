@@ -1,10 +1,24 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:jalanyok2/core/models/destination_model.dart';
+
+// Top-level function for background JSON parsing
+List<LatLng> parseRouteJson(String responseBody) {
+  final data = json.decode(responseBody);
+  List<LatLng> points = [];
+  if (data['routes'] != null && (data['routes'] as List).isNotEmpty) {
+    final geometry = data['routes'][0]['geometry']['coordinates'];
+    for (var coord in geometry) {
+      points.add(LatLng(coord[1].toDouble(), coord[0].toDouble()));
+    }
+  }
+  return points;
+}
 
 class MapScreen extends StatefulWidget {
   final Destination destination;
@@ -30,8 +44,25 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _initMapData() async {
     try {
-      // 1. Get current location
-      Position position = await _determinePosition();
+      // 1. Get current location with safety timeout wrapper
+      Position? position;
+      try {
+        position = await _determinePosition().timeout(const Duration(seconds: 5));
+      } catch (e) {
+        // Fallback Monas, Jakarta if Geolocator completely hangs
+        position = Position(
+          latitude: -6.175392,
+          longitude: 106.827153,
+          timestamp: DateTime.now(),
+          accuracy: 100,
+          altitude: 0,
+          altitudeAccuracy: 0,
+          heading: 0,
+          headingAccuracy: 0,
+          speed: 0,
+          speedAccuracy: 0,
+        );
+      }
       _currentPosition = LatLng(position.latitude, position.longitude);
 
       // 2. Geocode destination
@@ -86,7 +117,25 @@ class _MapScreenState extends State<MapScreen> {
       return lastKnown;
     }
 
-    return await Geolocator.getCurrentPosition();
+    try {
+      return await Geolocator.getCurrentPosition(
+        timeLimit: const Duration(seconds: 8),
+      );
+    } catch (e) {
+      // Jika GPS Emulator tersangkut/timeout, gunakan lokasi default (Monas, Jakarta)
+      return Position(
+        latitude: -6.175392,
+        longitude: 106.827153,
+        timestamp: DateTime.now(),
+        accuracy: 100,
+        altitude: 0,
+        altitudeAccuracy: 0,
+        heading: 0,
+        headingAccuracy: 0,
+        speed: 0,
+        speedAccuracy: 0,
+      );
+    }
   }
 
   Future<LatLng?> _geocodeDestination(String query) async {
@@ -111,17 +160,11 @@ class _MapScreenState extends State<MapScreen> {
     try {
       final response = await http.get(url).timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['routes'] != null && data['routes'].isNotEmpty) {
-          final geometry = data['routes'][0]['geometry']['coordinates'];
-          List<LatLng> points = [];
-          for (var coord in geometry) {
-            points.add(LatLng(coord[1].toDouble(), coord[0].toDouble())); // OSRM returns [lon, lat]
-          }
-          setState(() {
-            _routePoints = points;
-          });
-        }
+        // Parse JSON in background isolate to prevent ANR (UI thread block)
+        final points = await compute(parseRouteJson, response.body);
+        setState(() {
+          _routePoints = points;
+        });
       }
     } catch (e) {
       debugPrint("Routing error: $e");
@@ -163,15 +206,16 @@ class _MapScreenState extends State<MapScreen> {
                       urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.example.jalanyok2',
                     ),
-                    PolylineLayer(
-                      polylines: [
-                        Polyline(
-                          points: _routePoints,
-                          color: const Color(0xFF007AFF),
-                          strokeWidth: 4.0,
-                        ),
-                      ],
-                    ),
+                    if (_routePoints.isNotEmpty)
+                      PolylineLayer(
+                        polylines: [
+                          Polyline(
+                            points: _routePoints,
+                            color: const Color(0xFF007AFF),
+                            strokeWidth: 4.0,
+                          ),
+                        ],
+                      ),
                     MarkerLayer(
                       markers: [
                         Marker(

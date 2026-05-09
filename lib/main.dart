@@ -33,9 +33,8 @@ final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
 final GlobalKey<NavigatorState> _shellNavigatorHome = GlobalKey<NavigatorState>(
   debugLabel: 'shellHome',
 );
-final GlobalKey<NavigatorState> _shellNavigatorChatbot = GlobalKey<NavigatorState>(
-  debugLabel: 'shellChatbot',
-);
+final GlobalKey<NavigatorState> _shellNavigatorChatbot =
+    GlobalKey<NavigatorState>(debugLabel: 'shellChatbot');
 final GlobalKey<NavigatorState> _shellNavigatorPlan = GlobalKey<NavigatorState>(
   debugLabel: 'shellPlan',
 );

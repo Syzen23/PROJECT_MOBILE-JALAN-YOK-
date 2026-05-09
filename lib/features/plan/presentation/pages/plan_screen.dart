@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:jalanyok2/core/services/firestore_service.dart';
 import 'package:jalanyok2/core/models/destination_model.dart';
 import 'package:jalanyok2/core/services/auth_service.dart';
@@ -32,6 +35,10 @@ class _PlanScreenState extends State<PlanScreen> with SingleTickerProviderStateM
   Destination? _selectedDestination;
   bool _isLoading = true;
 
+  // Location state
+  String _currentLocationName = 'Mendeteksi lokasi...';
+  bool _locationError = false;
+
   // Constants
   final double hargaBbmPerLiter = 10000.0; // Asumsi harga BBM
 
@@ -49,6 +56,7 @@ class _PlanScreenState extends State<PlanScreen> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _fetchCurrentLocation();
     _loadDestinations();
   }
 
@@ -61,6 +69,111 @@ class _PlanScreenState extends State<PlanScreen> with SingleTickerProviderStateM
       }
       _isLoading = false;
     });
+  }
+
+  Future<void> _fetchCurrentLocation() async {
+    try {
+      // Cek apakah layanan lokasi aktif
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() {
+          _currentLocationName = 'GPS mati. Ketuk untuk coba lagi';
+          _locationError = true;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Aktifkan GPS/Lokasi di pengaturan HP Anda'),
+              action: SnackBarAction(
+                label: 'BUKA',
+                onPressed: () => Geolocator.openLocationSettings(),
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Cek izin lokasi
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() {
+            _currentLocationName = 'Izin lokasi ditolak. Ketuk untuk coba lagi';
+            _locationError = true;
+          });
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        setState(() {
+          _currentLocationName = 'Izin lokasi ditolak permanen';
+          _locationError = true;
+        });
+        return;
+      }
+
+      setState(() {
+        _currentLocationName = 'Mendeteksi lokasi...';
+        _locationError = false;
+      });
+
+      // Ambil posisi dengan timeout
+      Position position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          timeLimit: const Duration(seconds: 5),
+        );
+      } catch (e) {
+        Position? lastKnown = await Geolocator.getLastKnownPosition();
+        if (lastKnown != null) {
+          position = lastKnown;
+        } else {
+          setState(() {
+            _currentLocationName = 'Lokasi tidak ditemukan';
+            _locationError = true;
+          });
+          return;
+        }
+      }
+
+      // Reverse geocode menggunakan Nominatim (gratis)
+      try {
+        final url = Uri.parse(
+          'https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json&zoom=14',
+        );
+        final response = await http.get(url, headers: {'User-Agent': 'JalanYokApp/1.0'}).timeout(const Duration(seconds: 5));
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final address = data['address'];
+          // Ambil nama lokasi yang paling relevan
+          String placeName = address['suburb'] ?? address['village'] ?? address['city_district'] ?? address['city'] ?? address['town'] ?? address['county'] ?? 'Lokasi Ditemukan';
+          String city = address['city'] ?? address['town'] ?? address['county'] ?? '';
+          
+          setState(() {
+            _currentLocationName = city.isNotEmpty && placeName != city ? '$placeName, $city' : placeName;
+            _locationError = false;
+          });
+        } else {
+          setState(() {
+            _currentLocationName = 'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
+            _locationError = false;
+          });
+        }
+      } catch (e) {
+        setState(() {
+          _currentLocationName = 'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
+          _locationError = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _currentLocationName = 'Gagal mendeteksi lokasi';
+        _locationError = true;
+      });
+    }
   }
 
   @override
@@ -285,11 +398,28 @@ class _PlanScreenState extends State<PlanScreen> with SingleTickerProviderStateM
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Lokasi Anda',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
+                            GestureDetector(
+                              onTap: _locationError ? _fetchCurrentLocation : null,
+                              child: Row(
+                                children: [
+                                  if (!_locationError)
+                                    const Icon(Icons.my_location, size: 12, color: Colors.green)
+                                  else
+                                    const Icon(Icons.location_off, size: 12, color: Colors.red),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      _currentLocationName,
+                                      style: TextStyle(
+                                        color: _locationError ? Colors.red : Colors.grey,
+                                        fontSize: 12,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (_locationError)
+                                    const Icon(Icons.refresh, size: 12, color: Colors.blue),
+                                ],
                               ),
                             ),
                             const Divider(height: 16),
