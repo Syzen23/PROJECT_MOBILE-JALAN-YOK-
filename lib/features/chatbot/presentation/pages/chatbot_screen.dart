@@ -91,6 +91,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       _loadChatHistory();
     } else if (_currentSessionId != null) {
       await FirestoreService.instance.updateChatSessionMessages(_currentSessionId!, List.from(_messages));
+      _loadChatHistory(); // Sync drawer history with user message
     }
 
     final response = await GroqService.getChatResponse(_messages, model: _selectedModel);
@@ -103,6 +104,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     // Update session with assistant response
     if (_currentSessionId != null) {
       await FirestoreService.instance.updateChatSessionMessages(_currentSessionId!, List.from(_messages));
+      _loadChatHistory(); // Sync drawer history with the newly sent messages
     }
   }
 
