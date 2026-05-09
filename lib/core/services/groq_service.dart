@@ -5,7 +5,10 @@ class GroqService {
   static const String _apiKey = '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';
   static const String _apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
 
-  static Future<String> getChatResponse(List<Map<String, String>> messages) async {
+  static Future<String> getChatResponse(
+    List<Map<String, String>> messages, {
+    String model = 'llama-3.1-8b-instant',
+  }) async {
     try {
       final response = await http.post(
         Uri.parse(_apiUrl),
@@ -14,7 +17,7 @@ class GroqService {
           'Authorization': 'Bearer $_apiKey',
         },
         body: jsonEncode({
-          'model': 'llama-3.1-8b-instant', // Updated model because the old one was decommissioned
+          'model': model,
           'messages': messages,
           'temperature': 0.7,
         }),

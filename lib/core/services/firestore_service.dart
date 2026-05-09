@@ -13,6 +13,7 @@ class FirestoreService {
   CollectionReference get _destinationsCol => _db.collection('destinations');
   CollectionReference get _usersCol => _db.collection('users');
   CollectionReference get _tripHistoryCol => _db.collection('trip_history');
+  CollectionReference get _chatSessionsCol => _db.collection('chat_sessions');
 
   // ============================================================
   // INITIALIZATION - Seed dummy data if collections are empty
@@ -265,5 +266,64 @@ class FirestoreService {
     // Sort by date descending (newest first)
     results.sort((a, b) => (b['date'] ?? '').compareTo(a['date'] ?? ''));
     return results;
+  }
+
+  // ============================================================
+  // CHAT SESSIONS OPERATIONS
+  // ============================================================
+  Future<String> createChatSession({
+    required String userId,
+    required String title,
+    required List<Map<String, String>> initialMessages,
+  }) async {
+    final docRef = await _chatSessionsCol.add({
+      'user_id': userId,
+      'title': title,
+      'messages': initialMessages,
+      'updated_at': FieldValue.serverTimestamp(),
+    });
+    return docRef.id;
+  }
+
+  Future<void> updateChatSessionMessages(String sessionId, List<Map<String, String>> messages) async {
+    await _chatSessionsCol.doc(sessionId).update({
+      'messages': messages,
+      'updated_at': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getChatSessionsForUser(String userId) async {
+    try {
+      final snapshot = await _chatSessionsCol
+          .where('user_id', isEqualTo: userId)
+          .get();
+
+      var docs = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return {
+          ...data,
+          'id': doc.id,
+        };
+      }).toList();
+
+      // Sort locally to avoid needing a composite index in Firestore
+      docs.sort((a, b) {
+        final aTime = a['updated_at'] as Timestamp?;
+        final bTime = b['updated_at'] as Timestamp?;
+        if (aTime == null && bTime == null) return 0;
+        if (aTime == null) return 1;
+        if (bTime == null) return -1;
+        return bTime.compareTo(aTime);
+      });
+
+      return docs;
+    } catch (e) {
+      print("Error loading chat sessions: $e");
+      return [];
+    }
+  }
+
+  Future<void> deleteChatSession(String sessionId) async {
+    await _chatSessionsCol.doc(sessionId).delete();
   }
 }
