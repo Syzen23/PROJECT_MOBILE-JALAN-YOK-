@@ -3,6 +3,7 @@ import 'package:jalanyok2/core/services/firestore_service.dart';
 import 'package:jalanyok2/core/models/destination_model.dart';
 import 'package:jalanyok2/core/services/auth_service.dart';
 import 'package:jalanyok2/core/models/trip_history_model.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PlanScreen extends StatefulWidget {
   const PlanScreen({super.key});
@@ -129,6 +130,21 @@ class _PlanScreenState extends State<PlanScreen> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Berhasil disimpan ke Riwayat!')));
+    }
+  }
+
+  Future<void> _bukaPeta() async {
+    if (_selectedDestination == null) return;
+    final query = Uri.encodeComponent('${_selectedDestination!.title} ${_selectedDestination!.location}');
+    final urlString = 'https://www.google.com/maps/dir/?api=1&destination=$query';
+    final uri = Uri.parse(urlString);
+    
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal membuka aplikasi Peta.')));
+      }
     }
   }
 
@@ -771,6 +787,23 @@ class _PlanScreenState extends State<PlanScreen> {
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFF007AFF),
                     side: const BorderSide(color: Color(0xFF007AFF)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _bukaPeta,
+                  icon: const Icon(Icons.map, size: 18),
+                  label: const Text('Lihat Rute di Peta', style: TextStyle(fontSize: 14)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
