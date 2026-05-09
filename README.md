@@ -1,82 +1,230 @@
-# JalanYok - Travel Planner App ✈️🏖️
+# 🚀 JalanYok
 
-JalanYok adalah aplikasi *mobile* berbasis Flutter yang dirancang untuk membantu pengguna merencanakan perjalanan wisata mereka. Aplikasi ini memungkinkan pengguna untuk mencari destinasi wisata, menghitung estimasi biaya perjalanan (BBM, tiket, parkir, makan, penginapan), dan menyimpan riwayat rencana perjalanan mereka.
-
-## 🚀 Fitur Utama
-
-Aplikasi ini menggunakan sistem **Role-Based Access Control** (Admin & User) yang didukung penuh oleh database SQLite lokal.
-
-### 👤 Fitur User
-- **Autentikasi**: Sistem Login & Register dinamis.
-- **Beranda (Home)**: Menampilkan destinasi populer dan perjalanan terbaru yang diambil langsung dari database.
-- **Pencarian (Search)**: Fitur pencarian *real-time* untuk menemukan destinasi wisata.
-- **Rencana Perjalanan (Plan)**: 
-  - Kalkulator *budget* otomatis (BBM, tiket wisata, parkir berdasarkan jenis kendaraan).
-  - Form dinamis untuk menghitung total biaya (Makan, Penginapan, dll).
-  - **Simpan ke Riwayat**: Simpan hasil kalkulasi *budget* ke riwayat akun.
-- **Riwayat (History)**: Menampilkan daftar rencana perjalanan yang pernah disimpan oleh User yang sedang *login* secara terisolasi (User A tidak bisa melihat riwayat User B).
-- **Profil**: Menampilkan informasi akun dan fitur Logout.
-
-### 👑 Fitur Admin
-*(Akses khusus menggunakan akun Admin)*
-- **Admin Dashboard**: Menampilkan statistik total pengguna terdaftar dan jumlah destinasi yang tersedia.
-- **Manajemen Destinasi (CRUD)**:
-  - Melihat daftar seluruh destinasi.
-  - Menambah destinasi wisata baru (mendukung *input* harga tiket, jarak, dsb).
-  - Mengubah (*Edit*) data destinasi yang sudah ada.
-  - Menghapus (*Delete*) destinasi.
-- **Manajemen Pengguna**: Melihat daftar seluruh pengguna yang terdaftar beserta *role* mereka.
+### Aplikasi Perencanaan Perjalanan dan Pengelolaan Anggaran Wisatawan Berbasis Mobile
 
 ---
 
-## 🛠️ Teknologi & Arsitektur
+## 📌 Deskripsi Proyek
 
-- **Framework**: Flutter (Dart)
-- **Routing**: `go_router` (mendukung *Stateful Nested Navigation* / *Shell Route*)
-- **Database Lokal**: `sqflite` & `path`
-- **Manajemen Sesi**: `shared_preferences`
-- **Arsitektur**: Modular (berbasis fitur)
-  - `lib/core/` (Database, Model, Service)
-  - `lib/features/` (Home, Plan, Search, History, Profile, Auth, Admin)
+**JalanYok** adalah aplikasi mobile yang membantu pengguna dalam merencanakan perjalanan wisata sekaligus mengelola anggaran secara efisien.
+Aplikasi ini menyediakan informasi destinasi wisata, estimasi biaya perjalanan, serta analisis kecukupan budget secara otomatis.
 
 ---
 
-## 🗄️ Struktur Database (SQLite)
+## 🎯 Tujuan Pengembangan
 
-Aplikasi ini mengelola 3 tabel utama secara lokal:
-1. **`users`**: `id`, `name`, `email`, `password`, `role` (admin/user)
-2. **`destinations`**: `id`, `title`, `location`, `image`, `rating`, `visitors`, `tiket`, `jarak`, `waktu`
-3. **`trip_history`**: `id`, `user_id`, `destination_id`, `transport`, `total_budget`, `date`
-
----
-
-## 🔐 Akun Default (Dummy)
-
-Saat aplikasi pertama kali dijalankan, database akan otomatis membuat tabel dan menyisipkan 2 akun *default* untuk keperluan *testing*:
-
-**1. Akun Admin:**
-- **Email:** `admin@jalanyok.com`
-- **Password:** `password123`
-
-**2. Akun User Biasa:**
-- **Email:** `user@jalanyok.com`
-- **Password:** `password123`
-
-> *Anda juga dapat mendaftar sebagai User baru melalui halaman pendaftaran (Sign Up).*
+* Membantu pengguna menemukan destinasi wisata di Indonesia
+* Mempermudah perencanaan perjalanan
+* Mengelola anggaran perjalanan secara efektif
+* Mengurangi risiko overbudget saat wisata
 
 ---
 
-## 💻 Cara Menjalankan Aplikasi
+## 💡 Permasalahan yang Diselesaikan
 
-1. Pastikan Flutter SDK telah terinstal di komputer Anda.
-2. *Clone* repositori ini atau buka folder proyek di IDE Anda (VS Code / Android Studio).
-3. Jalankan perintah untuk mengunduh semua dependensi:
-   ```bash
-   flutter pub get
-   ```
-4. Jalankan aplikasi di emulator atau perangkat fisik:
-   ```bash
-   flutter run
-   ```
+* Informasi wisata tersebar di berbagai platform
+* Perencanaan perjalanan masih dilakukan secara manual
+* Sulit memperkirakan total biaya perjalanan
+* Risiko kehabisan budget saat perjalanan
 
-*(Catatan untuk pengguna Windows: Jika Anda mengalami masalah `shared_preferences` saat build, pastikan mode "Developer Mode" diaktifkan di Windows Settings).*
+---
+
+## 🛠️ Solusi yang Ditawarkan
+
+JalanYok menyediakan:
+
+* Informasi destinasi wisata dalam satu platform
+* Detail wisata (lokasi, harga tiket, deskripsi, rating)
+* Estimasi biaya perjalanan otomatis
+* Analisis kecukupan budget
+* Penyimpanan riwayat perjalanan
+
+---
+
+## ✨ Fitur Utama
+
+### 🏝️ Eksplorasi Destinasi
+
+* Pencarian berdasarkan nama atau kategori
+* Kategori: pantai, gunung, air terjun, budaya
+
+### 📍 Detail Destinasi
+
+* Foto wisata
+* Deskripsi lengkap
+* Harga tiket
+* Lokasi & alamat
+* Rating
+
+### 🗺️ Perencanaan Perjalanan
+
+* Input lokasi awal
+* Pilih destinasi
+* Pilih jenis kendaraan
+* Input budget
+
+### ⛽ Estimasi Biaya
+
+* Perhitungan jarak & waktu tempuh
+* Estimasi biaya bahan bakar
+* Total biaya perjalanan
+
+### 💰 Pengelolaan Anggaran
+
+* Input biaya tambahan (tiket, parkir, makan, penginapan)
+* Analisis budget (cukup / tidak)
+* Informasi sisa / kekurangan dana
+
+### 📜 Riwayat Perjalanan
+
+* Menyimpan data perjalanan
+* Melihat kembali perjalanan sebelumnya
+
+---
+
+## 🔄 Alur Sistem
+
+1. User login ke aplikasi
+2. Sistem menampilkan destinasi wisata
+3. User memilih destinasi
+4. User menginput data perjalanan
+5. Sistem mengambil data lokasi (GPS & Maps API)
+6. Sistem menghitung estimasi biaya
+7. Sistem menganalisis kecukupan budget
+8. Sistem menampilkan hasil
+9. Data perjalanan dapat disimpan ke database
+
+---
+
+## 🧠 Logika Perhitungan
+
+* **Jarak & waktu** → dari Maps API
+* **Biaya BBM** → berdasarkan jarak & jenis kendaraan
+* **Total biaya** → BBM + biaya tambahan
+* **Analisis budget**:
+
+  * Jika budget ≥ total biaya → *Cukup*
+  * Jika budget < total biaya → *Tidak Cukup*
+
+---
+
+## 🗄️ Struktur Database
+
+### User
+
+* id (PK)
+* name
+* email
+* password
+* profile_image
+
+### Categories
+
+* id (PK)
+* name
+* icon
+
+### Destinations
+
+* id (PK)
+* category_id (FK)
+* name
+* province
+* city
+* address
+* description
+* ticket_price
+* rating
+* latitude
+* longitude
+* image_url
+
+### Trips
+
+* id (PK)
+* user_id (FK)
+* destination_id (FK)
+* start_location
+* vehicle_type
+* budget
+* distance
+* duration
+* fuel_cost
+* total_cost
+* budget_status
+* remaining_budget
+* created_at
+
+### Trip Expenses
+
+* id (PK)
+* trip_id (FK)
+* ticket_cost
+* parking_cost
+* food_cost
+* lodging_cost
+
+---
+
+## 🏗️ Tech Stack
+
+* **Frontend:** Flutter
+* **Database:** SQLite
+* **API:** Google Maps API (untuk jarak & waktu)
+
+---
+
+## 📊 Status Pengembangan
+
+| Komponen             | Status        |
+| -------------------- | ------------- |
+| UI/UX Design         | ✅ 100%        |
+| Database Design      | ✅ 100%        |
+| Implementasi Flutter | ⏳ 30%         |
+| Integrasi API        | ⏳ On Progress |
+| Testing              | ⏳ Belum       |
+
+---
+
+## 📌 Scope & Batasan Sistem
+
+* Aplikasi berbasis mobile (Android)
+* Data disimpan secara lokal (SQLite)
+* Fokus pada perencanaan perjalanan individu
+* Tidak mencakup fitur booking atau pembayaran
+
+---
+
+## 🤝 Panduan Kolaborasi
+
+* Gunakan branch sesuai fitur (feature/nama-fitur)
+* Lakukan commit dengan pesan yang jelas
+* Pull request wajib sebelum merge ke main
+* Hindari perubahan langsung di branch utama
+
+---
+
+## 📈 Pengembangan Selanjutnya
+
+* Integrasi online database
+* Fitur rekomendasi destinasi (AI)
+* Sinkronisasi antar perangkat
+* Integrasi booking & pembayaran
+
+---
+
+## 👥 Tim Pengembang
+
+Kelompok: **Izin Serius**
+
+* Ma’ruf Budi Santoso
+* M. Sajid Izzulhaq
+* M. Atha Dzaki Yunada
+* Erwin Wijaya
+* Farrel Ady Rangga
+
+---
+
+## 📬 Penutup
+
+Dokumentasi ini dibuat sebagai acuan utama pengembangan aplikasi JalanYok agar seluruh stakeholder memiliki pemahaman yang sama terhadap sistem yang dibangun.
