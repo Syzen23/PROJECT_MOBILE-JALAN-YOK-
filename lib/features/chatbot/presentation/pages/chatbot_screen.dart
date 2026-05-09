@@ -125,22 +125,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 1,
-        actions: [
-          DropdownButton<String>(
-            value: _selectedModel,
-            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-            underline: const SizedBox(),
-            items: const [
-              DropdownMenuItem(value: 'llama-3.1-8b-instant', child: Text('Llama 3.1 8B', style: TextStyle(fontSize: 14))),
-              DropdownMenuItem(value: 'llama-3.3-70b-versatile', child: Text('Llama 3.3 70B', style: TextStyle(fontSize: 14))),
-              DropdownMenuItem(value: 'gemma2-9b-it', child: Text('Gemma 2 9B', style: TextStyle(fontSize: 14))),
-            ],
-            onChanged: (val) {
-              if (val != null) setState(() => _selectedModel = val);
-            },
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       drawer: Drawer(
         child: Column(
