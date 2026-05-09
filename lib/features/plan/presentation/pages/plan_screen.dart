@@ -12,7 +12,7 @@ class PlanScreen extends StatefulWidget {
   State<PlanScreen> createState() => _PlanScreenState();
 }
 
-class _PlanScreenState extends State<PlanScreen> {
+class _PlanScreenState extends State<PlanScreen> with SingleTickerProviderStateMixin {
   // State variables
   String _selectedTransport = 'Mobil';
   bool _isTiketOtomatis = true;
@@ -43,9 +43,12 @@ class _PlanScreenState extends State<PlanScreen> {
   double _biayaPenginapan = 0;
   double _totalBiaya = 0;
 
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadDestinations();
   }
 
@@ -69,6 +72,7 @@ class _PlanScreenState extends State<PlanScreen> {
     _parkirController.dispose();
     _makanController.dispose();
     _penginapanController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -106,7 +110,7 @@ class _PlanScreenState extends State<PlanScreen> {
     setState(() {
       _totalBiaya = _biayaBBM + _biayaTiket + _biayaParkir + _biayaMakan + _biayaPenginapan;
     });
-    DefaultTabController.of(context).animateTo(1);
+    _tabController.animateTo(1);
   }
 
   Future<void> _simpanKeRiwayat() async {
@@ -171,35 +175,33 @@ class _PlanScreenState extends State<PlanScreen> {
       );
     }
 
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: Column(
-          children: [
-            _buildHeader(),
-            _buildTabBar(),
-            Expanded(
-              child: Container(
-                color: Colors.white, // Putih tanpa gradien biru
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.grey.shade300, width: 1.0), // Border halus karena background putih
-                    ),
-                    child: TabBarView(
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: [_buildHitungBudgetTab(), _buildHasilTab()],
-                    ),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Column(
+        children: [
+          _buildHeader(),
+          _buildTabBar(),
+          Expanded(
+            child: Container(
+              color: Colors.white, // Putih tanpa gradien biru
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.grey.shade300, width: 1.0), // Border halus karena background putih
+                  ),
+                  child: TabBarView(
+                    controller: _tabController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [_buildHitungBudgetTab(), _buildHasilTab()],
                   ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -351,12 +353,13 @@ class _PlanScreenState extends State<PlanScreen> {
   Widget _buildTabBar() {
     return Container(
       color: Colors.white,
-      child: const TabBar(
+      child: TabBar(
+        controller: _tabController,
         labelColor: Colors.orange,
         unselectedLabelColor: Colors.grey,
         indicatorColor: Colors.orange,
         indicatorWeight: 3,
-        tabs: [Tab(text: 'Hitung Budget'), Tab(text: 'Hasil')],
+        tabs: const [Tab(text: 'Hitung Budget'), Tab(text: 'Hasil')],
       ),
     );
   }
@@ -779,7 +782,7 @@ class _PlanScreenState extends State<PlanScreen> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    DefaultTabController.of(context).animateTo(0);
+                    _tabController.animateTo(0);
                   },
                   icon: const Icon(Icons.edit, size: 18),
                   label: const Text('Edit Budget', style: TextStyle(fontSize: 14)),
