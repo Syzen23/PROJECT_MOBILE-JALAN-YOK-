@@ -193,15 +193,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: Colors.white,
-                          backgroundImage: (user?.profileImageUrl != null && user!.profileImageUrl!.isNotEmpty)
-                              ? MemoryImage(base64Decode(user.profileImageUrl!))
-                              : null,
-                          child: (user?.profileImageUrl == null || user!.profileImageUrl!.isEmpty)
-                              ? const Icon(Icons.person, color: Colors.grey)
-                              : null,
+                        GestureDetector(
+                          onTap: () => context.go('/profile'),
+                          child: CircleAvatar(
+                            radius: 20,
+                            backgroundColor: Colors.white,
+                            backgroundImage: (user?.profileImageUrl != null && user!.profileImageUrl!.isNotEmpty)
+                                ? MemoryImage(base64Decode(user.profileImageUrl!))
+                                : null,
+                            child: (user?.profileImageUrl == null || user!.profileImageUrl!.isEmpty)
+                                ? const Icon(Icons.person, color: Colors.grey)
+                                : null,
+                          ),
                         ),
                       ],
                     );
