@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../../core/models/api_destination_model.dart';
 
 class DestinationDetailScreen extends StatelessWidget {
-  final String title;
-  final String location;
-  final String imagePath;
-  final double rating;
+  final ApiDestination destination;
 
   const DestinationDetailScreen({
     super.key,
-    required this.title,
-    required this.location,
-    required this.imagePath,
-    required this.rating,
+    required this.destination,
   });
 
   @override
@@ -33,7 +28,27 @@ class DestinationDetailScreen extends StatelessWidget {
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.asset(imagePath, fit: BoxFit.cover),
+                      Image.network(
+                        destination.gambar,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: Colors.grey.shade200,
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF007AFF),
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey.shade300,
+                            child: const Icon(Icons.landscape, size: 60, color: Colors.grey),
+                          );
+                        },
+                      ),
                       // Lengkungan bagian bawah gambar (berwarna putih membulat tumpul)
                       Positioned(
                         bottom: -1, // Menghindari garis celah pixel
@@ -68,7 +83,7 @@ class DestinationDetailScreen extends StatelessWidget {
                     children: [
                       // Judul
                       Text(
-                        title,
+                        destination.nama,
                         style: Theme.of(context).textTheme.headlineMedium
                             ?.copyWith(
                               fontWeight: FontWeight.bold,
@@ -76,9 +91,30 @@ class DestinationDetailScreen extends StatelessWidget {
                               fontSize: 28,
                             ),
                       ),
+                      const SizedBox(height: 12),
+
+                      // Kategori badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF007AFF).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFF007AFF).withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Text(
+                          destination.kategori,
+                          style: const TextStyle(
+                            color: Color(0xFF007AFF),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 16),
 
-                      // Info Meta (Lokasi, Rating, Pengunjung)
+                      // Info Meta (Lokasi, Rating)
                       Row(
                         children: [
                           const Icon(
@@ -89,7 +125,7 @@ class DestinationDetailScreen extends StatelessWidget {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              location,
+                              destination.lokasi,
                               style: const TextStyle(
                                 color: Colors.black87,
                                 fontSize: 13,
@@ -101,38 +137,12 @@ class DestinationDetailScreen extends StatelessWidget {
                           const Icon(Icons.star, color: Colors.amber, size: 16),
                           const SizedBox(width: 4),
                           Text(
-                            '$rating (Grade)',
+                            '${destination.rating} (Grade)',
                             style: const TextStyle(
                               color: Colors.black87,
                               fontSize: 13,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          const Icon(
-                            Icons.people_outline,
-                            color: Color(0xFF007AFF),
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            '1K+',
-                            style: TextStyle(
-                              color: Colors.black87,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Baris Galeri
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildGalleryImage('assets/images/Garden.png'),
-                          _buildGalleryImage('assets/images/Mountain.png'),
-                          _buildGalleryImage('assets/images/Mountain2.png'),
-                          _buildGalleryImage('assets/images/FlowerYellow.png'),
                         ],
                       ),
                       const SizedBox(height: 32),
@@ -148,10 +158,12 @@ class DestinationDetailScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
 
-                      // Deskripsi
-                      const Text(
-                        'Gunung Bromo adalah salah satu destinasi wisata paling terkenal di Indonesia yang terletak di Jawa Timur. Gunung ini berada di kawasan Taman Nasional Bromo Tengger Semeru dan dikenal dengan pemandangan matahari terbitnya yang indah serta lautan pasir yang luas',
-                        style: TextStyle(
+                      // Deskripsi dari API
+                      Text(
+                        destination.deskripsi.isNotEmpty
+                            ? destination.deskripsi
+                            : 'Deskripsi belum tersedia untuk destinasi ini.',
+                        style: const TextStyle(
                           color: Colors.black87,
                           height: 1.5,
                           fontSize: 14,
@@ -241,13 +253,6 @@ class DestinationDetailScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildGalleryImage(String path) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Image.asset(path, width: 70, height: 70, fit: BoxFit.cover),
     );
   }
 }

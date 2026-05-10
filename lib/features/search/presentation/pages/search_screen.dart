@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'package:go_router/go_router.dart';
-import '../../../../core/services/firestore_service.dart';
-import '../../../../core/models/destination_model.dart';
+import '../../../../core/services/destination_api_service.dart';
+import '../../../../core/models/api_destination_model.dart';
+import '../../../home/presentation/pages/destination_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -14,21 +14,21 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _showResults = false;
-  List<Destination> _searchResults = [];
+  List<ApiDestination> _searchResults = [];
   bool _isLoading = false;
 
   final List<String> _riwayatPencarian = [
-    'Pantai Marina',
-    'Gunung Bromo',
     'Pantai Kuta',
+    'Candi Borobudur',
+    'Gunung Bromo',
   ];
 
   final List<String> _pencarianPopuler = [
-    'Pantai Kelingking',
     'Pantai',
-    'Pulau Pahawang',
-    'Tari Kecak',
-    'Candi Borobudur',
+    'Danau',
+    'Gunung',
+    'Budaya',
+    'Taman Nasional',
   ];
 
   @override
@@ -52,7 +52,7 @@ class _SearchScreenState extends State<SearchScreen> {
       _isLoading = true;
     });
 
-    final results = await FirestoreService.instance.searchDestinations(query);
+    final results = await DestinationApiService.instance.searchDestinations(query);
 
     setState(() {
       _searchResults = results;
@@ -268,82 +268,93 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildResultCard(Destination item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image
-          Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: item.image.startsWith('assets/')
-                  ? Image.asset(
-                      item.image,
-                      width: 80,
-                      height: 90,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 80,
-                          height: 90,
-                          color: Colors.grey.shade300,
-                          child: const Icon(Icons.image, color: Colors.grey),
-                        );
-                      },
-                    )
-                  : Image.file(
-                      File(item.image),
-                      width: 80,
-                      height: 90,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 80,
-                          height: 90,
-                          color: Colors.grey.shade300,
-                          child: const Icon(Icons.image, color: Colors.grey),
-                        );
-                      },
-                    ),
+  Widget _buildResultCard(ApiDestination item) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context, rootNavigator: true).push(
+          MaterialPageRoute(
+            builder: (context) => DestinationDetailScreen(
+              destination: item,
             ),
           ),
-          
-          // Details
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 12.0, right: 12.0, bottom: 12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Color(0xFF007AFF),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  _buildInfoRow(Icons.location_on, Colors.black87, item.location),
-                  const SizedBox(height: 4),
-                  _buildInfoRow(Icons.star, Colors.amber, "${item.rating} (Grade)"),
-                  const SizedBox(height: 4),
-                  _buildInfoRow(Icons.people_outline, const Color(0xFF007AFF), item.visitors),
-                  const SizedBox(height: 4),
-                  _buildInfoRow(Icons.confirmation_num_outlined, Colors.green, "Tiket masuk: Rp ${item.tiket.toInt()}"),
-                ],
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F9FA),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image dari API (URL)
+            Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  item.gambar,
+                  width: 80,
+                  height: 90,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      width: 80,
+                      height: 90,
+                      color: Colors.grey.shade200,
+                      child: const Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF007AFF)),
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: 80,
+                      height: 90,
+                      color: Colors.grey.shade300,
+                      child: const Icon(Icons.landscape, color: Colors.grey),
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-        ],
+            
+            // Details
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12.0, right: 12.0, bottom: 12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.nama,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Color(0xFF007AFF),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    _buildInfoRow(Icons.location_on, Colors.black87, item.lokasi),
+                    const SizedBox(height: 4),
+                    _buildInfoRow(Icons.star, Colors.amber, "${item.rating} (Grade)"),
+                    const SizedBox(height: 4),
+                    _buildInfoRow(Icons.category_outlined, const Color(0xFF007AFF), item.kategori),
+                    const SizedBox(height: 4),
+                    _buildInfoRow(Icons.map_outlined, Colors.green, item.provinsi),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

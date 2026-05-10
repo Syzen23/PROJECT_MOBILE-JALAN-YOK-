@@ -1,11 +1,10 @@
-import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:jalanyok2/core/services/firestore_service.dart';
+import 'package:jalanyok2/core/services/destination_api_service.dart';
 import 'package:jalanyok2/core/services/auth_service.dart';
-import 'package:jalanyok2/core/models/destination_model.dart';
+import 'package:jalanyok2/core/models/api_destination_model.dart';
 import 'package:jalanyok2/core/models/user_model.dart';
 import 'destination_detail_screen.dart';
 
@@ -17,8 +16,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<Destination> _destinations = [];
+  List<ApiDestination> _destinations = [];
   bool _isLoading = true;
+  String? _errorMessage;
 
 
   @override
@@ -31,10 +31,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   Future<void> _loadDestinations() async {
-    final data = await FirestoreService.instance.getAllDestinations();
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final data = await DestinationApiService.instance.getAllDestinations();
+
     setState(() {
       _destinations = data;
       _isLoading = false;
+      if (data.isEmpty) {
+        _errorMessage = 'Tidak bisa memuat data destinasi';
+      }
     });
   }
 
@@ -47,18 +56,57 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      body: RefreshIndicator(
+        color: const Color(0xFF007AFF),
+        onRefresh: _loadDestinations,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeroSection(context),
+              const SizedBox(height: 24),
+              _buildTripPlanningBanner(context),
+              const SizedBox(height: 24),
+              if (_errorMessage != null)
+                _buildErrorBanner()
+              else ...[
+                _buildDestinasiPopuler(context),
+                const SizedBox(height: 24),
+                _buildPerjalananTerakhir(context),
+              ],
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorBanner() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.orange.shade200),
+        ),
+        child: Row(
           children: [
-            _buildHeroSection(context),
-            const SizedBox(height: 24),
-            _buildTripPlanningBanner(context),
-            const SizedBox(height: 24),
-            _buildDestinasiPopuler(context),
-            const SizedBox(height: 24),
-            _buildPerjalananTerakhir(context),
-            const SizedBox(height: 40),
+            const Icon(Icons.wifi_off, color: Colors.orange, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _errorMessage!,
+                style: const TextStyle(color: Colors.orange, fontSize: 13),
+              ),
+            ),
+            TextButton(
+              onPressed: _loadDestinations,
+              child: const Text('Coba Lagi', style: TextStyle(fontSize: 12)),
+            ),
           ],
         ),
       ),
@@ -250,8 +298,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDestinasiPopuler(BuildContext context) {
-    // Show first two destinations as popular
-    final popularDestinations = _destinations.take(2).toList();
+    // Sort by rating descending untuk "Populer"
+    final sorted = List<ApiDestination>.from(_destinations)
+      ..sort((a, b) => b.rating.compareTo(a.rating));
+    final popularDestinations = sorted.take(5).toList();
 
     return Column(
       children: [
@@ -269,7 +319,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               GestureDetector(
-                onTap: () {},
+                onTap: () {
+                  context.push('/search');
+                },
                 child: const Row(
                   children: [
                     Text(
@@ -295,13 +347,7 @@ class _HomeScreenState extends State<HomeScreen> {
             itemCount: popularDestinations.length,
             itemBuilder: (context, index) {
               final dest = popularDestinations[index];
-              return _buildDestinationCard(
-                context,
-                title: dest.title,
-                location: dest.location,
-                imagePath: dest.image,
-                rating: dest.rating,
-              );
+              return _buildDestinationCard(context, dest);
             },
           ),
         ),
@@ -310,8 +356,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPerjalananTerakhir(BuildContext context) {
-    // Show third destination as recent trip
-    final recentDestinations = _destinations.skip(2).take(1).toList();
+    // Tampilkan destinasi dengan kategori berbeda
+    final recentDestinations = _destinations.length > 5
+        ? _destinations.sublist(5).take(5).toList()
+        : _destinations.take(3).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,7 +367,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 24.0),
           child: Text(
-            'Perjalanan Terakhir',
+            'Jelajahi Destinasi',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -336,13 +384,7 @@ class _HomeScreenState extends State<HomeScreen> {
             itemCount: recentDestinations.length,
             itemBuilder: (context, index) {
               final dest = recentDestinations[index];
-              return _buildDestinationCard(
-                context,
-                title: dest.title,
-                location: dest.location,
-                imagePath: dest.image,
-                rating: dest.rating,
-              );
+              return _buildDestinationCard(context, dest);
             },
           ),
         ),
@@ -350,23 +392,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDestinationCard(
-    BuildContext context, {
-    required String title,
-    required String location,
-    required String imagePath,
-    required double rating,
-  }) {
+  Widget _buildDestinationCard(BuildContext context, ApiDestination dest) {
     return GestureDetector(
       onTap: () {
-        // Navigate to detail screen
         Navigator.of(context, rootNavigator: true).push(
           MaterialPageRoute(
             builder: (context) => DestinationDetailScreen(
-              title: title,
-              location: location,
-              imagePath: imagePath,
-              rating: rating,
+              destination: dest,
             ),
           ),
         );
@@ -395,20 +427,40 @@ class _HomeScreenState extends State<HomeScreen> {
                     topLeft: Radius.circular(16),
                     topRight: Radius.circular(16),
                   ),
-                  child: imagePath.startsWith('assets/')
-                      ? Image.asset(
-                          imagePath,
-                          height: 110,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        )
-                      : Image.file(
-                          File(imagePath),
-                          height: 110,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
+                  child: Image.network(
+                    dest.gambar,
+                    height: 110,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        height: 110,
+                        width: double.infinity,
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF007AFF),
+                            ),
+                          ),
                         ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 110,
+                        width: double.infinity,
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.landscape, color: Colors.grey, size: 40),
+                      );
+                    },
+                  ),
                 ),
+                // Rating badge
                 Positioned(
                   top: 8,
                   right: 8,
@@ -423,13 +475,33 @@ class _HomeScreenState extends State<HomeScreen> {
                         const Icon(Icons.star, color: Colors.amber, size: 12),
                         const SizedBox(width: 2),
                         Text(
-                          rating.toString(),
+                          dest.rating.toString(),
                           style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                ),
+                // Kategori badge
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF007AFF).withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      dest.kategori,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -441,7 +513,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    dest.nama,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -456,7 +528,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(width: 2),
                       Expanded(
                         child: Text(
-                          location,
+                          dest.lokasi,
                           style: const TextStyle(
                             color: Colors.grey,
                             fontSize: 10,
@@ -475,10 +547,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Navigator.of(context, rootNavigator: true).push(
                           MaterialPageRoute(
                             builder: (context) => DestinationDetailScreen(
-                              title: title,
-                              location: location,
-                              imagePath: imagePath,
-                              rating: rating,
+                              destination: dest,
                             ),
                           ),
                         );
