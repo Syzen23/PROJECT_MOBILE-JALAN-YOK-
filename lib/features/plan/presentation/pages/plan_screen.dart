@@ -49,8 +49,7 @@ class _PlanScreenState extends State<PlanScreen> with SingleTickerProviderStateM
     'isTiketOtomatis': true,
     'isParkirOtomatis': true,
     'isDanaDarurat': false,
-    'vehicleData': null,
-    'isSearchingPlate': false,
+    'selectedVehicle': null,
     'selectedMake': null,
     'searchResults': <dynamic>[],
   };

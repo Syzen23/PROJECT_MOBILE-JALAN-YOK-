@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:jalanyok2/core/models/vehicle_data_model.dart';
+import 'package:jalanyok2/core/data/vehicle_database.dart';
 import 'budget_widgets.dart';
 
 class BudgetResultTab extends StatelessWidget {
@@ -20,7 +20,7 @@ class BudgetResultTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vehicleData = state['vehicleData'] as VehicleData?;
+    final selectedVehicle = state['selectedVehicle'] as VehicleEntry?;
     final transport = state['transport'] as String;
     final fuelType = state['fuelType'] as String;
     final penumpang = int.tryParse(controllers['penumpang']!.text) ?? 1;
@@ -35,15 +35,15 @@ class BudgetResultTab extends StatelessWidget {
     return Column(children: [
       Expanded(child: SingleChildScrollView(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
         // Info Kendaraan
-        if (vehicleData != null) ...[
+        if (selectedVehicle != null) ...[
           _sectionTitle('Info Kendaraan', Icons.directions_car, Colors.deepPurple),
           const SizedBox(height: 8),
           Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.deepPurple.shade50, borderRadius: BorderRadius.circular(12)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(vehicleData.displayName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              Text(selectedVehicle.displayName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              Text('Tahun ${vehicleData.registrationYear} • ${vehicleData.colour ?? "-"}', style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
-              Text('Tipe: ${vehicleData.vehicleType ?? "-"}', style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
+              Text('Tipe: ${selectedVehicle.type} • BBM: ${selectedVehicle.fuelType}', style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
+              if (selectedVehicle.engineCc > 0) Text('Mesin: ${selectedVehicle.engineDisplay}', style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
             ])),
           const SizedBox(height: 16),
         ],
