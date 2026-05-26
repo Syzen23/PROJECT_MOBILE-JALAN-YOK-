@@ -8,14 +8,14 @@
 
 JalanYok adalah aplikasi mobile berbasis **Flutter** yang digunakan untuk:
 
-* Manajemen perencanaan perjalanan
-* Perhitungan estimasi biaya
-* Analisis kecukupan anggaran
+- Manajemen perencanaan perjalanan
+- Perhitungan estimasi biaya
+- Analisis kecukupan anggaran
 
 Sistem menggunakan:
 
-* **Local Database (SQLite)** untuk penyimpanan data
-* **Maps API** untuk perhitungan jarak dan waktu tempuh
+- **Local Database (SQLite)** untuk penyimpanan data
+- **Maps API** untuk perhitungan jarak dan waktu tempuh
 
 ---
 
@@ -37,26 +37,25 @@ Sistem menggunakan:
 
 ### 1. Authentication
 
-* Input: email, password
-* Validasi: query ke tabel `user`
-* Output: akses ke sistem
+- Input: email, password
+- Validasi: query ke tabel `user`
+- Output: akses ke sistem
 
 ---
 
 ### 2. Fetch Destinations
 
-* Query data dari tabel `destinations`
-* Filter berdasarkan:
-
-  * category
-  * keyword search
+- Query data dari tabel `destinations`
+- Filter berdasarkan:
+  - category
+  - keyword search
 
 ---
 
 ### 3. Select Destination
 
-* User memilih destinasi
-* Data disimpan sementara (state)
+- User memilih destinasi
+- Data disimpan sementara (state)
 
 ---
 
@@ -64,21 +63,20 @@ Sistem menggunakan:
 
 Input:
 
-* start_location
-* destination_id
-* vehicle_type
-* budget
-* additional_costs
+- start_location
+- destination_id
+- vehicle_type
+- budget
+- additional_costs
 
 ---
 
 ### 5. Location Processing
 
-* Ambil koordinat user (GPS)
-* Hitung:
-
-  * distance
-  * duration
+- Ambil koordinat user (GPS)
+- Hitung:
+  - distance
+  - duration
     menggunakan Maps API
 
 ---
@@ -116,25 +114,25 @@ else:
 
 Menampilkan:
 
-* distance
-* duration
-* total_cost
-* budget_status
-* remaining_budget
+- distance
+- duration
+- total_cost
+- budget_status
+- remaining_budget
 
 ---
 
 ### 9. Data Persistence
 
-* Simpan ke tabel `trips`
-* Simpan detail ke `trip_expenses`
+- Simpan ke tabel `trips`
+- Simpan detail ke `trip_expenses`
 
 ---
 
 ### 10. History Retrieval
 
-* Query semua data dari `trips`
-* Join dengan `destinations`
+- Query semua data dari `trips`
+- Join dengan `destinations`
 
 ---
 
@@ -216,18 +214,18 @@ lodging_cost
 
 ## 🔗 Database Relationships
 
-* 1 User → Many Trips
-* 1 Destination → Many Trips
-* 1 Trip → 1 Trip Expenses
+- 1 User → Many Trips
+- 1 Destination → Many Trips
+- 1 Trip → 1 Trip Expenses
 
 ---
 
 ## ⚙️ Tech Stack
 
-* **Frontend:** Flutter
-* **Database:** SQLite
-* **State Management:** (Optional: Provider / Riverpod)
-* **API:** Maps API (distance & duration)
+- **Frontend:** Flutter
+- **Database:** SQLite
+- **State Management:** (Optional: Provider / Riverpod)
+- **API:** Maps API (distance & duration)
 
 ---
 
@@ -247,8 +245,8 @@ lib/
 
 ## 📊 Current Development Status
 
-| Module                 | Status    |
-| ---------------------- | --------- |
+| Module                 | Status     |
+| ---------------------- | ---------- |
 | UI/UX                  | ✅ 100%    |
 | Database Schema        | ✅ 100%    |
 | Business Logic         | ⏳ 40%     |
@@ -259,19 +257,19 @@ lib/
 
 ## ⚠️ System Constraints
 
-* Offline-first (SQLite only)
-* Maps API membutuhkan koneksi internet
-* Tidak mendukung multi-user real-time
-* Tidak ada sistem pembayaran
+- Offline-first (SQLite only)
+- Maps API membutuhkan koneksi internet
+- Tidak mendukung multi-user real-time
+- Tidak ada sistem pembayaran
 
 ---
 
 ## 🔮 Future Improvements
 
-* Cloud database integration
-* AI-based recommendation system
-* Real-time sync antar device
-* Booking & payment integration
+- Cloud database integration
+- AI-based recommendation system
+- Real-time sync antar device
+- Booking & payment integration
 
 ---
 
@@ -279,6 +277,6 @@ lib/
 
 Dokumentasi ini menjadi acuan utama pengembangan sistem untuk memastikan:
 
-* Konsistensi implementasi
-* Keselarasan fitur dengan desain awal
-* Menghindari scope creep selama development
+- Konsistensi implementasi
+- Keselarasan fitur dengan desain awal
+- Menghindari scope creep selama development

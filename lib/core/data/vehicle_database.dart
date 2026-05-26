@@ -56,7 +56,7 @@ class VehicleDatabase {
     VehicleEntry(make: 'Toyota', model: 'Camry', type: 'Sedan', engineCc: 2487, fuelType: 'Bensin', consumption: 11),
     VehicleEntry(make: 'Toyota', model: 'Hilux', type: 'Pickup', engineCc: 2393, fuelType: 'Solar', consumption: 10),
     VehicleEntry(make: 'Toyota', model: 'HiAce', type: 'Van', engineCc: 2393, fuelType: 'Solar', consumption: 9),
-    VehicleEntry(make: 'Toyota', model: 'GR86', type: 'Sport', engineCc: 2387, fuelType: 'Bensin', consumption: 11),
+    VehicleEntry(make: 'Toyota', model: 'GR86', type: 'Mobil Sport', engineCc: 2387, fuelType: 'Bensin', consumption: 11),
 
     // === HONDA ===
     VehicleEntry(make: 'Honda', model: 'Brio', type: 'City Car', engineCc: 1199, fuelType: 'Bensin', consumption: 16),
@@ -171,5 +171,12 @@ class VehicleDatabase {
     VehicleEntry(make: 'Kawasaki', model: 'Ninja ZX-25R', type: 'Sport', engineCc: 249, fuelType: 'Bensin', consumption: 25),
     VehicleEntry(make: 'Kawasaki', model: 'KLX 150', type: 'Trail', engineCc: 144, fuelType: 'Bensin', consumption: 35),
     VehicleEntry(make: 'Kawasaki', model: 'W175', type: 'Retro', engineCc: 177, fuelType: 'Bensin', consumption: 40),
+
+    // === MOTOR - SUZUKI ===
+    VehicleEntry(make: 'Suzuki', model: 'GSX-R150', type: 'Sport', engineCc: 147, fuelType: 'Bensin', consumption: 35),
+    VehicleEntry(make: 'Suzuki', model: 'Satria F150', type: 'Bebek', engineCc: 147, fuelType: 'Bensin', consumption: 38),
+    VehicleEntry(make: 'Suzuki', model: 'Address', type: 'Matic', engineCc: 113, fuelType: 'Bensin', consumption: 45),
+    VehicleEntry(make: 'Suzuki', model: 'Nex II', type: 'Matic', engineCc: 113, fuelType: 'Bensin', consumption: 48),
+    VehicleEntry(make: 'Suzuki', model: 'V-Strom 250SX', type: 'Trail', engineCc: 249, fuelType: 'Bensin', consumption: 30),
   ];
 }
