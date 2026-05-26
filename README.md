@@ -166,11 +166,15 @@ JalanYok menyediakan:
 
 ---
 
-## 🏗️ Tech Stack
+## 🏗️ Tech Stack & API
 
 * **Frontend:** Flutter
-* **Database:** SQLite
-* **API:** Google Maps API (untuk jarak & waktu)
+* **Backend & Database:** Firebase Authentication, Cloud Firestore
+* **API Terintegrasi:**
+  * **Groq API (Llama 3):** Untuk fitur asisten AI (Chatbot) travel.
+  * **OpenStreetMap (OSRM) & Nominatim API:** Untuk fitur peta, pencarian lokasi, dan routing navigasi (menggantikan Google Maps API).
+  * **MockAPI / REST API:** Untuk manajemen data destinasi pariwisata dari server eksternal.
+  * **Database Kendaraan Lokal:** Database embedded berisi 80+ kendaraan Indonesia (menggantikan API eksternal kendaraan).
 
 ---
 
