@@ -20,17 +20,15 @@ class VehicleEntry {
 
   String get displayName => '$make $model';
   String get engineDisplay => '${(engineCc / 1000).toStringAsFixed(1)}L ($engineCc cc)';
+  bool get isMotorcycle => ['Matic', 'Bebek', 'Sport', 'Trail', 'Retro'].contains(type);
 }
 
 class VehicleDatabase {
-  static const List<String> makes = [
-    'Toyota', 'Honda', 'Suzuki', 'Daihatsu', 'Mitsubishi',
-    'Nissan', 'Hyundai', 'Kia', 'Mazda', 'Wuling',
-    'MG', 'BMW', 'Yamaha', 'Kawasaki',
-  ];
+  static List<String> get carMakes => vehicles.where((v) => !v.isMotorcycle).map((v) => v.make).toSet().toList();
+  static List<String> get motorcycleMakes => vehicles.where((v) => v.isMotorcycle).map((v) => v.make).toSet().toList();
 
-  static List<VehicleEntry> getByMake(String make) {
-    return vehicles.where((v) => v.make.toLowerCase() == make.toLowerCase()).toList();
+  static List<VehicleEntry> getByMake(String make, {bool? isMotorcycle}) {
+    return vehicles.where((v) => v.make.toLowerCase() == make.toLowerCase() && (isMotorcycle == null || v.isMotorcycle == isMotorcycle)).toList();
   }
 
   static List<VehicleEntry> search(String make, String query) {

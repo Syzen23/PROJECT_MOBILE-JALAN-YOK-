@@ -46,12 +46,37 @@ class BudgetFormTab extends StatelessWidget {
   Widget _buildVehicleSearchSection(BuildContext context) {
     final selectedVehicle = state['selectedVehicle'] as VehicleEntry?;
     final selectedMake = state['selectedMake'] as String?;
+    final searchIsMotor = state['searchIsMotor'] as bool? ?? false;
     final searchResults = state['searchResults'];
     final List<VehicleEntry> results = searchResults is List
         ? searchResults.whereType<VehicleEntry>().toList()
         : <VehicleEntry>[];
 
     return SectionCard(title: 'Cari Data Kendaraan', icon: Icons.directions_car_filled, color: Colors.deepPurple, children: [
+      // Toggle Jenis Kendaraan
+      Row(children: [
+        const Text('Jenis Kendaraan: ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+        const SizedBox(width: 8),
+        Expanded(child: SegmentedButton<bool>(
+          segments: const [
+            ButtonSegment(value: false, label: Text('Mobil', style: TextStyle(fontSize: 11))),
+            ButtonSegment(value: true, label: Text('Motor', style: TextStyle(fontSize: 11))),
+          ],
+          selected: {searchIsMotor},
+          onSelectionChanged: (Set<bool> selection) {
+            onStateChanged('searchIsMotor', selection.first);
+            onStateChanged('selectedMake', null);
+            onStateChanged('selectedVehicle', null);
+            onStateChanged('searchResults', <VehicleEntry>[]);
+            controllers['modelSearch']?.clear();
+          },
+          style: SegmentedButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+          ),
+        )),
+      ]),
+      const SizedBox(height: 12),
       // Dropdown Merk
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('Merk Kendaraan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
@@ -68,7 +93,7 @@ class BudgetFormTab extends StatelessWidget {
             hint: const Text('Pilih merk...', style: TextStyle(fontSize: 12, color: Colors.grey)),
             items: [
               const DropdownMenuItem<String>(value: null, child: Text('Pilih merk...', style: TextStyle(color: Colors.grey))),
-              ...VehicleDatabase.makes.map((m) =>
+              ...(searchIsMotor ? VehicleDatabase.motorcycleMakes : VehicleDatabase.carMakes).map((m) =>
                 DropdownMenuItem<String>(value: m, child: Text(m))),
             ],
             onChanged: (v) {
@@ -78,7 +103,7 @@ class BudgetFormTab extends StatelessWidget {
               controllers['modelSearch']?.clear();
               // Langsung tampilkan semua model dari merk ini
               if (v != null) {
-                onStateChanged('searchResults', VehicleDatabase.getByMake(v));
+                onStateChanged('searchResults', VehicleDatabase.getByMake(v, isMotorcycle: searchIsMotor));
               }
             },
           )),
