@@ -215,13 +215,16 @@ JalanYok menyediakan:
 
 ## 👥 Tim Pengembang
 
+**Universitas Teknokrat Indonesia**
+
 Kelompok: **Izin Serius**
 
-* Ma’ruf Budi Santoso
-* M. Sajid Izzulhaq
-* M. Atha Dzaki Yunada
-* Erwin Wijaya
-* Farrel Ady Rangga
+Anggota:
+1. Ma'ruf Budi Santoso (24312031)
+2. M. Sajid Izzulhaq (24312039)
+3. M. Atha Dzaki Yunada (24312029)
+4. Erwin Wijaya (24312092)
+5. Farrel Ady Rangga (24312019)
 
 ---
 
