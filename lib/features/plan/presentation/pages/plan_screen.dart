@@ -6,49 +6,67 @@ import 'package:jalanyok2/core/services/firestore_service.dart';
 import 'package:jalanyok2/core/models/destination_model.dart';
 import 'package:jalanyok2/core/services/auth_service.dart';
 import 'package:jalanyok2/core/models/trip_history_model.dart';
+import 'budget_constants.dart';
+import 'budget_form_tab.dart';
+import 'budget_result_tab.dart';
 import 'map_screen.dart';
 
 class PlanScreen extends StatefulWidget {
   const PlanScreen({super.key});
-
   @override
   State<PlanScreen> createState() => _PlanScreenState();
 }
 
 class _PlanScreenState extends State<PlanScreen> with SingleTickerProviderStateMixin {
-  // State variables
-  String _selectedTransport = 'Mobil';
-  bool _isTiketOtomatis = true;
-  bool _isParkirOtomatis = true;
-
   // Controllers
-  final TextEditingController _budgetController = TextEditingController();
-  final TextEditingController _bbmController = TextEditingController();
-  final TextEditingController _jarakController = TextEditingController();
-  final TextEditingController _tiketController = TextEditingController();
-  final TextEditingController _parkirController = TextEditingController();
-  final TextEditingController _makanController = TextEditingController();
-  final TextEditingController _penginapanController = TextEditingController();
-  
-  // Destination Database
+  final Map<String, TextEditingController> _controllers = {
+    'budget': TextEditingController(),
+    'bbm': TextEditingController(),
+    'jarak': TextEditingController(),
+    'tiket': TextEditingController(),
+    'parkir': TextEditingController(),
+    'makan': TextEditingController(),
+    'penumpang': TextEditingController(text: '1'),
+    'durasi': TextEditingController(text: '1'),
+    'hargaPenginapan': TextEditingController(text: '0'),
+    'jumlahMalam': TextEditingController(text: '0'),
+    'jumlahKamar': TextEditingController(text: '1'),
+    'tol': TextEditingController(),
+    'tiketTransport': TextEditingController(),
+    'olehOleh': TextEditingController(),
+    'lainnya': TextEditingController(),
+    'platNomor': TextEditingController(),
+  };
+
+  // State
+  final Map<String, dynamic> _state = {
+    'transport': 'Mobil',
+    'tipeKendaraan': null,
+    'fuelType': 'Pertalite',
+    'tipeAkomodasi': 'Tidak Menginap',
+    'frekuensiMakan': 3,
+    'isTiketOtomatis': true,
+    'isParkirOtomatis': true,
+    'isDanaDarurat': false,
+    'vehicleData': null,
+    'isSearchingPlate': false,
+  };
+
+  // Results
+  final Map<String, double> _biaya = {
+    'bbm': 0, 'tol': 0, 'transportUmum': 0, 'tiket': 0, 'parkir': 0,
+    'makan': 0, 'penginapan': 0, 'olehOleh': 0, 'lainnya': 0,
+    'subtotal': 0, 'danaDarurat': 0, 'total': 0,
+  };
+
+  // Destination
   List<Destination> destinations = [];
   Destination? _selectedDestination;
   bool _isLoading = true;
 
-  // Location state
+  // Location
   String _currentLocationName = 'Mendeteksi lokasi...';
   bool _locationError = false;
-
-  // Constants
-  final double hargaBbmPerLiter = 10000.0; // Asumsi harga BBM
-
-  // Results
-  double _biayaBBM = 0;
-  double _biayaTiket = 0;
-  double _biayaParkir = 0;
-  double _biayaMakan = 0;
-  double _biayaPenginapan = 0;
-  double _totalBiaya = 0;
 
   late TabController _tabController;
 
@@ -62,943 +80,170 @@ class _PlanScreenState extends State<PlanScreen> with SingleTickerProviderStateM
 
   Future<void> _loadDestinations() async {
     final data = await FirestoreService.instance.getAllDestinations();
-    setState(() {
-      destinations = data;
-      if (destinations.isNotEmpty) {
-        _selectedDestination = destinations[0];
-      }
-      _isLoading = false;
-    });
+    setState(() { destinations = data; if (destinations.isNotEmpty) _selectedDestination = destinations[0]; _isLoading = false; });
   }
 
   Future<void> _fetchCurrentLocation() async {
     try {
-      // Cek apakah layanan lokasi aktif
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        setState(() {
-          _currentLocationName = 'GPS mati. Ketuk untuk coba lagi';
-          _locationError = true;
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Aktifkan GPS/Lokasi di pengaturan HP Anda'),
-              action: SnackBarAction(
-                label: 'BUKA',
-                onPressed: () => Geolocator.openLocationSettings(),
-              ),
-            ),
-          );
-        }
+        setState(() { _currentLocationName = 'GPS mati. Ketuk untuk coba lagi'; _locationError = true; });
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Aktifkan GPS/Lokasi di pengaturan HP Anda'), action: SnackBarAction(label: 'BUKA', onPressed: () => Geolocator.openLocationSettings())));
         return;
       }
-
-      // Cek izin lokasi
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          setState(() {
-            _currentLocationName = 'Izin lokasi ditolak. Ketuk untuk coba lagi';
-            _locationError = true;
-          });
-          return;
-        }
+        if (permission == LocationPermission.denied) { setState(() { _currentLocationName = 'Izin lokasi ditolak'; _locationError = true; }); return; }
       }
-
-      if (permission == LocationPermission.deniedForever) {
-        setState(() {
-          _currentLocationName = 'Izin lokasi ditolak permanen';
-          _locationError = true;
-        });
-        return;
-      }
-
-      setState(() {
-        _currentLocationName = 'Mendeteksi lokasi...';
-        _locationError = false;
-      });
-
-      // Ambil posisi dengan timeout
+      if (permission == LocationPermission.deniedForever) { setState(() { _currentLocationName = 'Izin lokasi ditolak permanen'; _locationError = true; }); return; }
+      setState(() { _currentLocationName = 'Mendeteksi lokasi...'; _locationError = false; });
       Position position;
-      try {
-        position = await Geolocator.getCurrentPosition(
-          timeLimit: const Duration(seconds: 5),
-        );
-      } catch (e) {
+      try { position = await Geolocator.getCurrentPosition(timeLimit: const Duration(seconds: 5)); }
+      catch (e) {
         Position? lastKnown = await Geolocator.getLastKnownPosition();
-        if (lastKnown != null) {
-          position = lastKnown;
-        } else {
-          setState(() {
-            _currentLocationName = 'Lokasi tidak ditemukan';
-            _locationError = true;
-          });
-          return;
-        }
+        if (lastKnown != null) { position = lastKnown; } else { setState(() { _currentLocationName = 'Lokasi tidak ditemukan'; _locationError = true; }); return; }
       }
-
-      // Reverse geocode menggunakan Nominatim (gratis)
       try {
-        final url = Uri.parse(
-          'https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json&zoom=14',
-        );
+        final url = Uri.parse('https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json&zoom=14');
         final response = await http.get(url, headers: {'User-Agent': 'JalanYokApp/1.0'}).timeout(const Duration(seconds: 5));
         if (response.statusCode == 200) {
-          final data = json.decode(response.body);
-          final address = data['address'];
-          // Ambil nama lokasi yang paling relevan
+          final data = json.decode(response.body); final address = data['address'];
           String placeName = address['suburb'] ?? address['village'] ?? address['city_district'] ?? address['city'] ?? address['town'] ?? address['county'] ?? 'Lokasi Ditemukan';
           String city = address['city'] ?? address['town'] ?? address['county'] ?? '';
-          
-          setState(() {
-            _currentLocationName = city.isNotEmpty && placeName != city ? '$placeName, $city' : placeName;
-            _locationError = false;
-          });
-        } else {
-          setState(() {
-            _currentLocationName = 'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
-            _locationError = false;
-          });
-        }
-      } catch (e) {
-        setState(() {
-          _currentLocationName = 'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
-          _locationError = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _currentLocationName = 'Gagal mendeteksi lokasi';
-        _locationError = true;
-      });
-    }
+          setState(() { _currentLocationName = city.isNotEmpty && placeName != city ? '$placeName, $city' : placeName; _locationError = false; });
+        } else { setState(() { _currentLocationName = 'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}'; _locationError = false; }); }
+      } catch (e) { setState(() { _currentLocationName = 'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}'; _locationError = false; }); }
+    } catch (e) { setState(() { _currentLocationName = 'Gagal mendeteksi lokasi'; _locationError = true; }); }
   }
 
   @override
   void dispose() {
-    _budgetController.dispose();
-    _bbmController.dispose();
-    _jarakController.dispose();
-    _tiketController.dispose();
-    _parkirController.dispose();
-    _makanController.dispose();
-    _penginapanController.dispose();
+    _controllers.values.forEach((c) => c.dispose());
     _tabController.dispose();
     super.dispose();
   }
 
+  void _onStateChanged(String key, dynamic value) {
+    setState(() => _state[key] = value);
+  }
+
   void _hitungBudget() {
     if (_selectedDestination == null) return;
-    
-    double jarak = double.tryParse(_jarakController.text) ?? 0;
+    final transport = _state['transport'] as String;
+    final fuelType = _state['fuelType'] as String;
+    final isKendaraanPribadi = transport == 'Mobil' || transport == 'Motor';
+    final jarak = double.tryParse(_controllers['jarak']!.text) ?? 0;
+    final konsumsiBbm = double.tryParse(_controllers['bbm']!.text) ?? 0;
+    final penumpang = int.tryParse(_controllers['penumpang']!.text) ?? 1;
+    final durasi = int.tryParse(_controllers['durasi']!.text) ?? 1;
+    final frekuensiMakan = _state['frekuensiMakan'] as int;
+
+    // Get fuel price
+    double hargaBbm = 10000;
+    for (var f in fuelTypes) { if (f['label'] == fuelType) { hargaBbm = f['harga'] as double; break; } }
 
     // 1. BBM
-    double konsumsiBbm = double.tryParse(_bbmController.text) ?? 0;
-    if (konsumsiBbm > 0) {
-      _biayaBBM = (jarak / konsumsiBbm) * hargaBbmPerLiter;
-    } else {
-      _biayaBBM = 0;
-    }
+    _biaya['bbm'] = isKendaraanPribadi && konsumsiBbm > 0 ? (jarak / konsumsiBbm) * hargaBbm : 0;
+    // 2. Tol
+    _biaya['tol'] = isKendaraanPribadi ? (double.tryParse(_controllers['tol']!.text) ?? 0) : 0;
+    // 3. Transport umum
+    _biaya['transportUmum'] = !isKendaraanPribadi ? (double.tryParse(_controllers['tiketTransport']!.text) ?? 0) : 0;
+    // 4. Tiket masuk
+    _biaya['tiket'] = (_state['isTiketOtomatis'] as bool) ? _selectedDestination!.tiket : (double.tryParse(_controllers['tiket']!.text) ?? 0);
+    // 5. Parkir
+    _biaya['parkir'] = (_state['isParkirOtomatis'] as bool) ? (transport == 'Motor' ? 5000 : 10000) : (double.tryParse(_controllers['parkir']!.text) ?? 0);
+    // 6. Makan
+    final budgetMakan = double.tryParse(_controllers['makan']!.text) ?? 0;
+    _biaya['makan'] = budgetMakan * frekuensiMakan * penumpang * durasi;
+    // 7. Penginapan
+    final hargaMalam = double.tryParse(_controllers['hargaPenginapan']!.text) ?? 0;
+    final jumlahMalam = int.tryParse(_controllers['jumlahMalam']!.text) ?? 0;
+    final jumlahKamar = int.tryParse(_controllers['jumlahKamar']!.text) ?? 1;
+    _biaya['penginapan'] = hargaMalam * jumlahMalam * jumlahKamar;
+    // 8. Oleh-oleh
+    _biaya['olehOleh'] = double.tryParse(_controllers['olehOleh']!.text) ?? 0;
+    // 9. Lain-lain
+    _biaya['lainnya'] = double.tryParse(_controllers['lainnya']!.text) ?? 0;
+    // Subtotal
+    _biaya['subtotal'] = _biaya['bbm']! + _biaya['tol']! + _biaya['transportUmum']! + _biaya['tiket']! + _biaya['parkir']! + _biaya['makan']! + _biaya['penginapan']! + _biaya['olehOleh']! + _biaya['lainnya']!;
+    // 10. Dana darurat
+    _biaya['danaDarurat'] = (_state['isDanaDarurat'] as bool) ? _biaya['subtotal']! * 0.10 : 0;
+    // Total
+    _biaya['total'] = _biaya['subtotal']! + _biaya['danaDarurat']!;
 
-    // 2. Tiket
-    if (_isTiketOtomatis) {
-      _biayaTiket = _selectedDestination!.tiket;
-    } else {
-      _biayaTiket = double.tryParse(_tiketController.text) ?? 0;
-    }
-
-    // 3. Parkir
-    if (_isParkirOtomatis) {
-      _biayaParkir = _selectedTransport == 'Motor' ? 5000 : 10000;
-    } else {
-      _biayaParkir = double.tryParse(_parkirController.text) ?? 0;
-    }
-
-    // 4. Makan & Penginapan
-    _biayaMakan = double.tryParse(_makanController.text) ?? 0;
-    _biayaPenginapan = double.tryParse(_penginapanController.text) ?? 0;
-
-    setState(() {
-      _totalBiaya = _biayaBBM + _biayaTiket + _biayaParkir + _biayaMakan + _biayaPenginapan;
-    });
+    setState(() {});
     _tabController.animateTo(1);
   }
 
   Future<void> _simpanKeRiwayat() async {
     final user = await AuthService.getCurrentUser();
     if (user == null || _selectedDestination == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Harap login dan pilih destinasi.')));
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Harap login dan pilih destinasi.')));
       return;
     }
-
-    final history = TripHistory(
-      userId: user.id!,
-      destinationId: _selectedDestination!.id!,
-      transport: _selectedTransport,
-      totalBudget: _totalBiaya,
-      date: DateTime.now().toIso8601String().split('T').first,
-    );
-
+    final history = TripHistory(userId: user.id!, destinationId: _selectedDestination!.id!, transport: _state['transport'] as String, totalBudget: _biaya['total'] ?? 0, date: DateTime.now().toIso8601String().split('T').first);
     await FirestoreService.instance.insertTripHistory(history);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Berhasil disimpan ke Riwayat!')));
-    }
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Berhasil disimpan ke Riwayat!')));
   }
 
   void _bukaPeta() {
     if (_selectedDestination == null) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MapScreen(destination: _selectedDestination!),
-      ),
-    );
-  }
-
-  String _formatCurrency(double amount) {
-    String res = amount.toStringAsFixed(0);
-    String result = '';
-    int count = 0;
-    for (int i = res.length - 1; i >= 0; i--) {
-      result = res[i] + result;
-      count++;
-      if (count % 3 == 0 && i > 0) {
-        result = '.$result';
-      }
-    }
-    return result; // Format "123.456"
+    Navigator.push(context, MaterialPageRoute(builder: (context) => MapScreen(destination: _selectedDestination!)));
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF007AFF))),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          _buildHeader(),
-          _buildTabBar(),
-          Expanded(
-            child: Container(
-              color: Colors.white, // Putih tanpa gradien biru
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.grey.shade300, width: 1.0), // Border halus karena background putih
-                  ),
-                  child: TabBarView(
-                    controller: _tabController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: [_buildHitungBudgetTab(), _buildHasilTab()],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    if (_isLoading) return const Scaffold(backgroundColor: Colors.white, body: Center(child: CircularProgressIndicator(color: Color(0xFF007AFF))));
+    return Scaffold(backgroundColor: Colors.white, body: Column(children: [
+      _buildHeader(),
+      _buildTabBar(),
+      Expanded(child: Container(color: Colors.white, padding: const EdgeInsets.all(16),
+        child: Container(decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.grey.shade300)),
+          child: TabBarView(controller: _tabController, physics: const NeverScrollableScrollPhysics(), children: [
+            BudgetFormTab(state: _state, controllers: _controllers, onHitung: _hitungBudget, onStateChanged: _onStateChanged, destinations: destinations, selectedDestination: _selectedDestination, onDestinationChanged: (d) => setState(() => _selectedDestination = d)),
+            BudgetResultTab(biaya: _biaya, state: _state, controllers: _controllers, onEdit: () => _tabController.animateTo(0), onBukaPeta: _bukaPeta, onSimpan: _simpanKeRiwayat),
+          ])))),
+    ]));
   }
 
   Widget _buildHeader() {
-    return Stack(
-      children: [
-        // Background Image
-        Container(
-          width: double.infinity,
-          height: 200,
-          decoration: const BoxDecoration(
-            color: Color(0xFF007AFF),
-            image: DecorationImage(
-              image: AssetImage('assets/images/travel.jpg'),
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
-
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 16.0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 32),
-
-                // Route Card
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // Dots and line indicator
-                      Column(
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: const Color(
-                                0xFF007AFF,
-                              ).withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Container(
-                                width: 6,
-                                height: 6,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF007AFF),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Container(
-                            width: 2,
-                            height: 24,
-                            color: Colors.grey.shade300,
-                          ),
-                          const Icon(
-                            Icons.location_on,
-                            color: Colors.red,
-                            size: 16,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 16),
-                      // Locations
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            GestureDetector(
-                              onTap: _locationError ? _fetchCurrentLocation : null,
-                              child: Row(
-                                children: [
-                                  if (!_locationError)
-                                    const Icon(Icons.my_location, size: 12, color: Colors.green)
-                                  else
-                                    const Icon(Icons.location_off, size: 12, color: Colors.red),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      _currentLocationName,
-                                      style: TextStyle(
-                                        color: _locationError ? Colors.red : Colors.grey,
-                                        fontSize: 12,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (_locationError)
-                                    const Icon(Icons.refresh, size: 12, color: Colors.blue),
-                                ],
-                              ),
-                            ),
-                            const Divider(height: 16),
-                            Autocomplete<Destination>(
-                              initialValue: TextEditingValue(text: _selectedDestination?.title ?? ''),
-                              displayStringForOption: (option) => option.title,
-                              optionsBuilder: (TextEditingValue textEditingValue) {
-                                if (textEditingValue.text.isEmpty) {
-                                  return destinations;
-                                }
-                                return destinations.where((option) {
-                                  return option.title.toLowerCase().contains(textEditingValue.text.toLowerCase());
-                                });
-                              },
-                              onSelected: (Destination selection) {
-                                setState(() {
-                                  _selectedDestination = selection;
-                                });
-                              },
-                              fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-                                return TextField(
-                                  controller: textEditingController,
-                                  focusNode: focusNode,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: Colors.black87,
-                                  ),
-                                  decoration: const InputDecoration(
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.zero,
-                                    border: InputBorder.none,
-                                    hintText: 'Cari Tujuan...',
-                                    hintStyle: TextStyle(
-                                      fontWeight: FontWeight.normal,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
+    return Stack(children: [
+      Container(width: double.infinity, height: 200, decoration: const BoxDecoration(color: Color(0xFF007AFF), image: DecorationImage(image: AssetImage('assets/images/travel.jpg'), fit: BoxFit.cover))),
+      SafeArea(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const SizedBox(height: 32),
+        Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 4))]),
+          child: Row(children: [
+            Column(children: [
+              Container(width: 12, height: 12, decoration: BoxDecoration(color: const Color(0xFF007AFF).withValues(alpha: 0.2), shape: BoxShape.circle), child: Center(child: Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF007AFF), shape: BoxShape.circle)))),
+              Container(width: 2, height: 24, color: Colors.grey.shade300),
+              const Icon(Icons.location_on, color: Colors.red, size: 16),
+            ]),
+            const SizedBox(width: 16),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              GestureDetector(onTap: _locationError ? _fetchCurrentLocation : null, child: Row(children: [
+                if (!_locationError) const Icon(Icons.my_location, size: 12, color: Colors.green) else const Icon(Icons.location_off, size: 12, color: Colors.red),
+                const SizedBox(width: 4),
+                Expanded(child: Text(_currentLocationName, style: TextStyle(color: _locationError ? Colors.red : Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis)),
+                if (_locationError) const Icon(Icons.refresh, size: 12, color: Colors.blue),
+              ])),
+              const Divider(height: 16),
+              Autocomplete<Destination>(
+                initialValue: TextEditingValue(text: _selectedDestination?.title ?? ''),
+                displayStringForOption: (o) => o.title,
+                optionsBuilder: (v) => v.text.isEmpty ? destinations : destinations.where((o) => o.title.toLowerCase().contains(v.text.toLowerCase())),
+                onSelected: (s) => setState(() => _selectedDestination = s),
+                fieldViewBuilder: (context, ctrl, node, onSubmit) => TextField(controller: ctrl, focusNode: node,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+                  decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.zero, border: InputBorder.none, hintText: 'Cari Tujuan...', hintStyle: TextStyle(fontWeight: FontWeight.normal, color: Colors.grey))),
+              ),
+            ])),
+          ])),
+      ]))),
+    ]);
   }
 
   Widget _buildTabBar() {
-    return Container(
-      color: Colors.white,
-      child: TabBar(
-        controller: _tabController,
-        labelColor: Colors.orange,
-        unselectedLabelColor: Colors.grey,
-        indicatorColor: Colors.orange,
-        indicatorWeight: 3,
-        tabs: const [Tab(text: 'Hitung Budget'), Tab(text: 'Hasil')],
-      ),
-    );
-  }
-
-  Widget _buildHitungBudgetTab() {
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildInputField(
-                  'Budget',
-                  'Contoh: 2000000',
-                  controller: _budgetController,
-                  isNumber: true,
-                ),
-                const SizedBox(height: 16),
-                _buildTransportDropdown(),
-                const SizedBox(height: 16),
-                _buildInputField(
-                  'Konsumsi BBM',
-                  'Contoh: 40 km/l',
-                  controller: _bbmController,
-                  isNumber: true,
-                ),
-                const SizedBox(height: 16),
-                _buildInputField(
-                  'Jarak Tempuh',
-                  'Contoh: 15 km',
-                  controller: _jarakController,
-                  isNumber: true,
-                ),
-                const SizedBox(height: 24),
-                _buildBiayaTambahanSection(),
-              ],
-            ),
-          ),
-        ),
-        // Hitung Button inside the white card
-        Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _hitungBudget,
-              icon: const Icon(Icons.search, size: 18),
-              label: const Text(
-                'Hitung Budget',
-                style: TextStyle(fontSize: 14),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF007AFF),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTransportDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Transportasi',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade400, width: 1.0),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedTransport,
-              isExpanded: true,
-              icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-              style: const TextStyle(fontSize: 12, color: Colors.black87),
-              items:
-                  ['Mobil', 'Motor', 'Bus', 'Kereta'].map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-              onChanged: (newValue) {
-                setState(() {
-                  _selectedTransport = newValue!;
-                });
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBiayaTambahanSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue.shade400, width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Biaya Tambahan',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildOtomatisField(
-            'Tiket masuk',
-            'Contoh: 10000',
-            _tiketController,
-            _isTiketOtomatis,
-            (val) => setState(() => _isTiketOtomatis = val),
-          ),
-          const SizedBox(height: 16),
-          _buildOtomatisField(
-            'Parkir',
-            'Contoh: 5000',
-            _parkirController,
-            _isParkirOtomatis,
-            (val) => setState(() => _isParkirOtomatis = val),
-          ),
-          const SizedBox(height: 16),
-          _buildInputField(
-            'Makan',
-            'Contoh: 150000',
-            controller: _makanController,
-            isNumber: true,
-          ),
-          const SizedBox(height: 16),
-          _buildInputField(
-            'Penginapan(Opsional)',
-            'Contoh: 200000/tidak usah diisi',
-            controller: _penginapanController,
-            isNumber: true,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInputField(
-    String label,
-    String hint, {
-    TextEditingController? controller,
-    bool isNumber = false,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade400, width: 1.0),
-          ),
-          child: TextField(
-            controller: controller,
-            keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-            style: const TextStyle(fontSize: 12),
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              hintText: hint,
-              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 12),
-              contentPadding: const EdgeInsets.only(bottom: 12),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildOtomatisField(
-    String label,
-    String hint,
-    TextEditingController controller,
-    bool isOtomatis,
-    Function(bool) onChanged,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          height: 40,
-          padding: const EdgeInsets.only(left: 16, right: 4),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade400, width: 1.0),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  keyboardType: TextInputType.number,
-                  enabled: !isOtomatis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isOtomatis ? Colors.grey : Colors.black,
-                  ),
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: hint,
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: 12,
-                    ),
-                    contentPadding: const EdgeInsets.only(bottom: 12),
-                  ),
-                ),
-              ),
-              PopupMenuButton<bool>(
-                initialValue: isOtomatis,
-                onSelected: onChanged,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: true,
-                    child: Text('Otomatis', style: TextStyle(fontSize: 12)),
-                  ),
-                  const PopupMenuItem(
-                    value: false,
-                    child: Text('Manual', style: TextStyle(fontSize: 12)),
-                  ),
-                ],
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.blue.shade300, width: 1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        isOtomatis ? 'Otomatis' : 'Manual',
-                        style: const TextStyle(
-                          color: Color(0xFF007AFF),
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.keyboard_arrow_down,
-                        color: Color(0xFF007AFF),
-                        size: 14,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHasilTab() {
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Text(
-                  'Estimasi Perjalanan',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildResultBox('Jarak', '${double.tryParse(_jarakController.text)?.toInt() ?? 0} km'),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(child: _buildResultBox('Waktu', '${_selectedDestination?.waktu ?? 0} Jam')),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Biaya',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildResultBox('BBM', _formatCurrency(_biayaBBM)),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildResultBox(
-                        'Tiket masuk',
-                        _formatCurrency(_biayaTiket),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildResultBox(
-                        'Parkir',
-                        _formatCurrency(_biayaParkir),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildResultBox(
-                        'Makan',
-                        _formatCurrency(_biayaMakan),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildResultBox(
-                        'Penginapan',
-                        _formatCurrency(_biayaPenginapan),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(child: const SizedBox()), // Empty space to align
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Total',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildResultBox(
-                  '',
-                  _formatCurrency(_totalBiaya),
-                  isTotal: true,
-                ),
-              ],
-            ),
-          ),
-        ),
-        // Hitung Button inside the white card
-        Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            children: [
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    _tabController.animateTo(0);
-                  },
-                  icon: const Icon(Icons.edit, size: 18),
-                  label: const Text('Edit Budget', style: TextStyle(fontSize: 14)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF007AFF),
-                    side: const BorderSide(color: Color(0xFF007AFF)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _bukaPeta,
-                  icon: const Icon(Icons.map, size: 18),
-                  label: const Text('Lihat Rute di Peta', style: TextStyle(fontSize: 14)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _simpanKeRiwayat,
-                  icon: const Icon(Icons.save, size: 18),
-                  label: const Text('Simpan ke Riwayat', style: TextStyle(fontSize: 14)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF007AFF),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildResultBox(String title, String value, {bool isTotal = false}) {
-    return Column(
-      crossAxisAlignment: isTotal
-          ? CrossAxisAlignment.center
-          : CrossAxisAlignment.start,
-      children: [
-        if (title.isNotEmpty) ...[
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 6),
-        ],
-        Container(
-          width: isTotal ? 160 : double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade400, width: 1.0),
-          ),
-          child: Text(
-            value,
-            textAlign: isTotal ? TextAlign.center : TextAlign.left,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: Colors.grey.shade600,
-            ),
-          ),
-        ),
-      ],
-    );
+    return Container(color: Colors.white, child: TabBar(controller: _tabController, labelColor: Colors.orange, unselectedLabelColor: Colors.grey, indicatorColor: Colors.orange, indicatorWeight: 3, tabs: const [Tab(text: 'Hitung Budget'), Tab(text: 'Hasil')]));
   }
 }
