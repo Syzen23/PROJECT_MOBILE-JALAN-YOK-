@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:jalanyok2/core/models/destination_model.dart';
 import 'package:jalanyok2/core/models/vehicle_data_model.dart';
-import 'package:jalanyok2/core/services/nopol_service.dart';
+import 'package:jalanyok2/core/services/vehicle_api_service.dart';
 import 'budget_constants.dart';
 import 'budget_widgets.dart';
 
@@ -22,7 +22,7 @@ class BudgetFormTab extends StatelessWidget {
     final isKendaraanPribadi = transport == 'Mobil' || transport == 'Motor';
     return Column(children: [
       Expanded(child: SingleChildScrollView(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _buildNopolSection(context),
+        _buildVehicleSearchSection(context),
         const SizedBox(height: 12),
         _buildTransportSection(isKendaraanPribadi),
         const SizedBox(height: 12),
@@ -44,19 +44,93 @@ class BudgetFormTab extends StatelessWidget {
     ]);
   }
 
-  Widget _buildNopolSection(BuildContext context) {
+  Widget _buildVehicleSearchSection(BuildContext context) {
     final vehicleData = state['vehicleData'] as VehicleData?;
     final isSearching = state['isSearchingPlate'] as bool? ?? false;
-    return SectionCard(title: 'Cari Kendaraan (Plat Nomor)', icon: Icons.search, color: Colors.deepPurple, children: [
+    final selectedMake = state['selectedMake'] as String?;
+    final searchResults = state['searchResults'] as List<VehicleData>? ?? [];
+
+    return SectionCard(title: 'Cari Data Kendaraan', icon: Icons.directions_car_filled, color: Colors.deepPurple, children: [
+      // Dropdown Merk
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Merk Kendaraan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+        const SizedBox(height: 6),
+        Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade400)),
+          child: DropdownButtonHideUnderline(child: DropdownButton<String>(
+            value: selectedMake,
+            isExpanded: true,
+            icon: const Icon(Icons.keyboard_arrow_down, size: 20),
+            style: const TextStyle(fontSize: 12, color: Colors.black87),
+            hint: const Text('Pilih merk...', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            items: [
+              const DropdownMenuItem<String>(value: null, child: Text('Pilih merk...', style: TextStyle(color: Colors.grey))),
+              ...VehicleApiService.popularMakes.map((m) =>
+                DropdownMenuItem<String>(value: m, child: Text(m))),
+            ],
+            onChanged: (v) {
+              onStateChanged('selectedMake', v);
+              onStateChanged('vehicleData', null);
+              onStateChanged('searchResults', <VehicleData>[]);
+              controllers['modelSearch']?.clear();
+            },
+          )),
+        ),
+      ]),
+      const SizedBox(height: 12),
+      // Input model + tombol cari
       Row(children: [
-        Expanded(child: BudgetField(label: 'Plat Nomor', hint: 'Contoh: B1234ABC', controller: controllers['platNomor'])),
+        Expanded(child: BudgetField(
+          label: 'Model Kendaraan',
+          hint: 'Contoh: Avanza, Civic, Beat',
+          controller: controllers['modelSearch'],
+        )),
         const SizedBox(width: 8),
         Padding(padding: const EdgeInsets.only(top: 20), child: SizedBox(height: 40, child: ElevatedButton(
-          onPressed: isSearching ? null : () => _searchPlate(context),
+          onPressed: isSearching ? null : () => _searchVehicle(context),
           style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(horizontal: 16)),
-          child: isSearching ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.search, size: 18),
+          child: isSearching
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Icon(Icons.search, size: 18),
         ))),
       ]),
+      // Search results list
+      if (searchResults.isNotEmpty && vehicleData == null) ...[
+        const SizedBox(height: 12),
+        const Text('Pilih kendaraan:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+        const SizedBox(height: 6),
+        Container(
+          constraints: const BoxConstraints(maxHeight: 200),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.deepPurple.shade100),
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.all(4),
+            itemCount: searchResults.length,
+            separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade200),
+            itemBuilder: (context, index) {
+              final v = searchResults[index];
+              return ListTile(
+                dense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                title: Text(v.displayName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                subtitle: Text(
+                  '${v.registrationYear} • ${v.vehicleType ?? "-"} • ${v.fuelType ?? "-"} • ${v.engineSizeDisplay}',
+                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                ),
+                trailing: const Icon(Icons.chevron_right, size: 16, color: Colors.deepPurple),
+                onTap: () => _selectVehicle(context, v),
+              );
+            },
+          ),
+        ),
+      ],
+      // Selected vehicle info card
       if (vehicleData != null) ...[
         const SizedBox(height: 12),
         Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.deepPurple.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.deepPurple.shade200)),
@@ -64,36 +138,116 @@ class BudgetFormTab extends StatelessWidget {
             Row(children: [
               const Icon(Icons.check_circle, color: Colors.green, size: 16), const SizedBox(width: 6),
               Expanded(child: Text(vehicleData.displayName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
+              GestureDetector(
+                onTap: () {
+                  onStateChanged('vehicleData', null);
+                  onStateChanged('searchResults', <VehicleData>[]);
+                },
+                child: const Icon(Icons.close, size: 16, color: Colors.grey),
+              ),
             ]),
-            const SizedBox(height: 6),
-            Text('Tahun: ${vehicleData.registrationYear} | Warna: ${vehicleData.colour ?? "-"}', style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
-            Text('Tipe: ${vehicleData.vehicleType ?? "-"} | Lokasi: ${vehicleData.location ?? "-"}', style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
-            if (vehicleData.stnkExpiry != null) Text('STNK: ${vehicleData.stnkExpiry}', style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
+            const SizedBox(height: 8),
+            _buildVehicleInfoRow(Icons.calendar_today, 'Tahun', vehicleData.registrationYear),
+            _buildVehicleInfoRow(Icons.category, 'Tipe', vehicleData.vehicleType ?? '-'),
+            _buildVehicleInfoRow(Icons.local_gas_station, 'Bahan Bakar', vehicleData.fuelType ?? '-'),
+            _buildVehicleInfoRow(Icons.settings, 'Mesin', vehicleData.engineSizeDisplay),
+            if (vehicleData.cylinders != null)
+              _buildVehicleInfoRow(Icons.build_circle, 'Silinder', '${vehicleData.cylinders}'),
+            if (vehicleData.transmission != null)
+              _buildVehicleInfoRow(Icons.swap_horiz, 'Transmisi', vehicleData.transmission!),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: Row(children: [
+                Icon(Icons.speed, size: 14, color: Colors.green.shade700),
+                const SizedBox(width: 6),
+                Expanded(child: Text(
+                  'Estimasi konsumsi BBM: ${vehicleData.estimatedConsumption.toStringAsFixed(1)} km/l',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green.shade800),
+                )),
+              ]),
+            ),
           ]),
         ),
       ],
     ]);
   }
 
-  Future<void> _searchPlate(BuildContext context) async {
-    final plate = controllers['platNomor']!.text.trim();
-    if (plate.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Masukkan plat nomor')));
+  Widget _buildVehicleInfoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(children: [
+        Icon(icon, size: 12, color: Colors.deepPurple.shade300),
+        const SizedBox(width: 6),
+        Text('$label: ', style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
+        Expanded(child: Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold))),
+      ]),
+    );
+  }
+
+  Future<void> _searchVehicle(BuildContext context) async {
+    final make = state['selectedMake'] as String?;
+    final model = controllers['modelSearch']?.text.trim() ?? '';
+
+    if (make == null || make.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih merk kendaraan terlebih dahulu')));
       return;
     }
+
     onStateChanged('isSearchingPlate', true);
-    final data = await NopolService.lookupPlate(plate);
+    onStateChanged('vehicleData', null);
+
+    final results = await VehicleApiService.searchVehicle(
+      make: make,
+      model: model.isNotEmpty ? model : null,
+    );
+
     onStateChanged('isSearchingPlate', false);
-    if (data != null) {
-      onStateChanged('vehicleData', data);
-      onStateChanged('transport', data.transportType);
-      controllers['bbm']!.text = data.estimatedConsumption.toStringAsFixed(0);
-      final fuel = data.fuelType?.toUpperCase() ?? '';
-      if (fuel.contains('SOLAR')) { onStateChanged('fuelType', 'Solar'); }
-      else { onStateChanged('fuelType', 'Pertalite'); }
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ditemukan: ${data.displayName}')));
+
+    if (results.isNotEmpty) {
+      onStateChanged('searchResults', results);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ditemukan ${results.length} kendaraan')),
+        );
+      }
     } else {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kendaraan tidak ditemukan')));
+      onStateChanged('searchResults', <VehicleData>[]);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kendaraan tidak ditemukan. Coba model lain.')),
+        );
+      }
+    }
+  }
+
+  void _selectVehicle(BuildContext context, VehicleData vehicle) {
+    onStateChanged('vehicleData', vehicle);
+    onStateChanged('searchResults', <VehicleData>[]);
+
+    // Auto-fill transport type
+    onStateChanged('transport', vehicle.transportType);
+
+    // Auto-fill konsumsi BBM
+    controllers['bbm']!.text = vehicle.estimatedConsumption.toStringAsFixed(0);
+
+    // Auto-fill fuel type based on API data
+    final fuel = (vehicle.fuelType ?? '').toUpperCase();
+    if (fuel.contains('SOLAR') || fuel.contains('DIESEL')) {
+      onStateChanged('fuelType', 'Solar');
+    } else {
+      onStateChanged('fuelType', 'Pertalite');
+    }
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Kendaraan dipilih: ${vehicle.displayName}')),
+      );
     }
   }
 

@@ -36,6 +36,7 @@ class _PlanScreenState extends State<PlanScreen> with SingleTickerProviderStateM
     'olehOleh': TextEditingController(),
     'lainnya': TextEditingController(),
     'platNomor': TextEditingController(),
+    'modelSearch': TextEditingController(),
   };
 
   // State
@@ -50,6 +51,8 @@ class _PlanScreenState extends State<PlanScreen> with SingleTickerProviderStateM
     'isDanaDarurat': false,
     'vehicleData': null,
     'isSearchingPlate': false,
+    'selectedMake': null,
+    'searchResults': <dynamic>[],
   };
 
   // Results
