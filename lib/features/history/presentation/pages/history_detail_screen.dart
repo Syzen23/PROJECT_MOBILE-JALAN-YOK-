@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:jalanyok2/core/models/destination_model.dart';
 import 'package:jalanyok2/core/services/firestore_service.dart';
+import 'package:jalanyok2/core/widgets/cached_app_image.dart';
 import 'package:jalanyok2/features/plan/presentation/pages/map_screen.dart';
 
 class HistoryDetailScreen extends StatefulWidget {
@@ -21,20 +20,6 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
   void initState() {
     super.initState();
     item = Map<String, dynamic>.from(widget.item);
-  }
-
-  ImageProvider _imageProvider(String? path) {
-    final image = path == null || path.isEmpty
-        ? 'assets/images/Pantai.png'
-        : path;
-
-    if (image.startsWith('http://') || image.startsWith('https://')) {
-      return NetworkImage(image);
-    }
-    if (image.startsWith('assets/')) {
-      return AssetImage(image);
-    }
-    return FileImage(File(image));
   }
 
   String _fmtCurrency(dynamic value) {
@@ -260,7 +245,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
               ),
               flexibleSpace: FlexibleSpaceBar(
                 background: Image(
-                  image: _imageProvider(item['image'] as String?),
+                  image: appImageProvider(item['image'] as String?),
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
                     color: Colors.grey.shade200,

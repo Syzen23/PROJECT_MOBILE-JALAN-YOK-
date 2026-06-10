@@ -2,10 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:jalanyok2/core/services/destination_api_service.dart';
 import 'package:jalanyok2/core/services/auth_service.dart';
 import 'package:jalanyok2/core/models/api_destination_model.dart';
 import 'package:jalanyok2/core/models/user_model.dart';
+import 'package:jalanyok2/core/repositories/destination_repository.dart';
+import 'package:jalanyok2/core/widgets/cached_app_image.dart';
 import 'destination_detail_screen.dart';
 import 'all_destinations_screen.dart';
 
@@ -21,7 +22,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
-
   @override
   void initState() {
     super.initState();
@@ -29,15 +29,13 @@ class _HomeScreenState extends State<HomeScreen> {
     AuthService.getCurrentUser(); // This will trigger the notifier
   }
 
-
-
   Future<void> _loadDestinations() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
-    final data = await DestinationApiService.instance.getAllDestinations();
+    final data = await DestinationRepository.instance.getAllDestinations();
 
     setState(() {
       _destinations = data;
@@ -52,7 +50,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF007AFF))),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF007AFF)),
+        ),
       );
     }
 
@@ -149,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-        
+
         // Content Overlay
         SafeArea(
           child: Padding(
@@ -198,10 +198,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: CircleAvatar(
                             radius: 20,
                             backgroundColor: Colors.white,
-                            backgroundImage: (user?.profileImageUrl != null && user!.profileImageUrl!.isNotEmpty)
-                                ? MemoryImage(base64Decode(user.profileImageUrl!))
+                            backgroundImage:
+                                (user?.profileImageUrl != null &&
+                                    user!.profileImageUrl!.isNotEmpty)
+                                ? MemoryImage(
+                                    base64Decode(user.profileImageUrl!),
+                                  )
                                 : null,
-                            child: (user?.profileImageUrl == null || user!.profileImageUrl!.isEmpty)
+                            child:
+                                (user?.profileImageUrl == null ||
+                                    user!.profileImageUrl!.isEmpty)
                                 ? const Icon(Icons.person, color: Colors.grey)
                                 : null,
                           ),
@@ -212,14 +218,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
 
                 const SizedBox(height: 40),
-                
+
                 // Search Bar
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: TextField(
                     readOnly: true,
@@ -262,10 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: [
-                Colors.black.withValues(alpha: 0.6),
-                Colors.transparent,
-              ],
+              colors: [Colors.black.withValues(alpha: 0.6), Colors.transparent],
             ),
           ),
           child: Column(
@@ -283,15 +288,28 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () {},
-                icon: SvgPicture.asset('assets/images/rocket.svg', colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn), width: 16),
-                label: const Text('Buat Rencana Perjalanan', style: TextStyle(fontSize: 12)),
+                icon: SvgPicture.asset(
+                  'assets/images/rocket.svg',
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
+                  width: 16,
+                ),
+                label: const Text(
+                  'Buat Rencana Perjalanan',
+                  style: TextStyle(fontSize: 12),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF007AFF),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                 ),
               ),
             ],
@@ -330,10 +348,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Text(
                       'View all',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black54,
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.black54),
                     ),
                     Icon(Icons.chevron_right, size: 16, color: Colors.black54),
                   ],
@@ -393,10 +408,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Text(
                       'View all',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black54,
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.black54),
                     ),
                     Icon(Icons.chevron_right, size: 16, color: Colors.black54),
                   ],
@@ -427,9 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () {
         Navigator.of(context, rootNavigator: true).push(
           MaterialPageRoute(
-            builder: (context) => DestinationDetailScreen(
-              destination: dest,
-            ),
+            builder: (context) => DestinationDetailScreen(destination: dest),
           ),
         );
       },
@@ -457,37 +467,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     topLeft: Radius.circular(16),
                     topRight: Radius.circular(16),
                   ),
-                  child: Image.network(
-                    dest.gambar,
+                  child: CachedAppImage(
+                    imageUrl: dest.gambar,
                     height: 110,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        height: 110,
-                        width: double.infinity,
-                        color: Colors.grey.shade200,
-                        child: const Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Color(0xFF007AFF),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 110,
-                        width: double.infinity,
-                        color: Colors.grey.shade200,
-                        child: const Icon(Icons.landscape, color: Colors.grey, size: 40),
-                      );
-                    },
+                    memCacheWidth: 400,
+                    memCacheHeight: 220,
                   ),
                 ),
                 // Rating badge
@@ -495,7 +481,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   top: 8,
                   right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
@@ -520,7 +509,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   top: 8,
                   left: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF007AFF).withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(8),
@@ -554,7 +546,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, color: Colors.grey, size: 12),
+                      const Icon(
+                        Icons.location_on,
+                        color: Colors.grey,
+                        size: 12,
+                      ),
                       const SizedBox(width: 2),
                       Expanded(
                         child: Text(
@@ -576,9 +572,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       onPressed: () {
                         Navigator.of(context, rootNavigator: true).push(
                           MaterialPageRoute(
-                            builder: (context) => DestinationDetailScreen(
-                              destination: dest,
-                            ),
+                            builder: (context) =>
+                                DestinationDetailScreen(destination: dest),
                           ),
                         );
                       },
@@ -590,7 +585,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                       ),
-                      child: const Text('Selengkapnya >', style: TextStyle(fontSize: 10)),
+                      child: const Text(
+                        'Selengkapnya >',
+                        style: TextStyle(fontSize: 10),
+                      ),
                     ),
                   ),
                 ],

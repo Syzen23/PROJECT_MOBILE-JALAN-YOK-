@@ -45,6 +45,7 @@ dependencies:
   google_sign_in: ^7.2.0
   cloud_firestore: ^6.3.0
   http: ^1.6.0
+  cached_network_image: ^3.4.1
   url_launcher: ^6.3.2
   flutter_map: ^8.3.0
   latlong2: ^0.9.1
@@ -73,7 +74,20 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/images/
+    - assets/images/bromo.png
+    - assets/images/BromoCard.png
+    - assets/images/FestivalCard.png
+    - assets/images/Google.svg
+    - assets/images/Handphone.svg
+    - assets/images/History.svg
+    - assets/images/Home.svg
+    - assets/images/Logo.png
+    - assets/images/NusaPenidaCard.png
+    - assets/images/Pantai.png
+    - assets/images/rocket.svg
+    - assets/images/TorajaCard.png
+    - assets/images/travel.jpg
+    - assets/images/User.svg
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

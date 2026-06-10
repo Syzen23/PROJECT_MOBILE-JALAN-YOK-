@@ -6,8 +6,8 @@ import 'package:jalanyok2/core/services/firestore_service.dart';
 import 'package:jalanyok2/core/models/destination_model.dart';
 import 'package:jalanyok2/core/models/api_destination_model.dart';
 import 'package:jalanyok2/core/services/auth_service.dart';
-import 'package:jalanyok2/core/services/destination_api_service.dart';
-import 'package:jalanyok2/core/services/vehicle_api_service.dart';
+import 'package:jalanyok2/core/repositories/destination_repository.dart';
+import 'package:jalanyok2/core/repositories/vehicle_repository.dart';
 import 'package:jalanyok2/core/models/trip_history_model.dart';
 import 'budget_constants.dart';
 import 'budget_form_tab.dart';
@@ -97,7 +97,7 @@ class _PlanScreenState extends State<PlanScreen>
   }
 
   Future<void> _loadDestinations() async {
-    final apiData = await DestinationApiService.instance.getAllDestinations();
+    final apiData = await DestinationRepository.instance.getAllDestinations();
     final data = apiData.isNotEmpty
         ? apiData.map(_mapApiDestination).toList()
         : await FirestoreService.instance.getAllDestinations();
@@ -109,7 +109,9 @@ class _PlanScreenState extends State<PlanScreen>
   }
 
   Future<void> _loadVehicleMakes() async {
-    final makes = await VehicleApiService.getMakes(isMotorcycle: false);
+    final makes = await VehicleRepository.instance.getMakes(
+      isMotorcycle: false,
+    );
     if (mounted) setState(() => _state['vehicleMakes'] = makes);
   }
 

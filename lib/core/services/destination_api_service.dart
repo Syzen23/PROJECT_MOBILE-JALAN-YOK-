@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/api_destination_model.dart';
 
@@ -12,8 +13,14 @@ class DestinationApiService {
   static final DestinationApiService instance = DestinationApiService._();
   DestinationApiService._();
 
+  List<ApiDestination>? _cache;
+
   /// GET /api/data - Ambil semua destinasi wisata
-  Future<List<ApiDestination>> getAllDestinations() async {
+  Future<List<ApiDestination>> getAllDestinations({
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh && _cache != null) return _cache!;
+
     try {
       final response = await http
           .get(Uri.parse('$_baseUrl/api/data'))
@@ -24,15 +31,16 @@ class DestinationApiService {
 
         if (body['success'] == true && body['data'] != null) {
           final List<dynamic> dataList = body['data'];
-          return dataList
+          _cache = dataList
               .map((json) => ApiDestination.fromJson(json))
               .toList();
+          return _cache!;
         }
       }
 
       return [];
     } catch (e) {
-      print('Error fetching destinations from API: $e');
+      debugPrint('Error fetching destinations from API: $e');
       return [];
     }
   }
@@ -54,7 +62,7 @@ class DestinationApiService {
 
       return null;
     } catch (e) {
-      print('Error fetching destination by id from API: $e');
+      debugPrint('Error fetching destination by id from API: $e');
       return null;
     }
   }

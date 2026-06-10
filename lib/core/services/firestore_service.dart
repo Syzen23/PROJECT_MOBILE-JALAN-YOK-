@@ -276,6 +276,9 @@ class FirestoreService {
         .get();
 
     List<Map<String, dynamic>> results = [];
+    final fallbackDestinationIds = <String>{};
+    final pendingFallbackRows = <Map<String, dynamic>>[];
+
     for (var doc in snapshot.docs) {
       final data = doc.data() as Map<String, dynamic>;
       final snapshotTitle = data['destination_title'] as String?;
@@ -295,20 +298,50 @@ class FirestoreService {
 
       // Fallback untuk riwayat lama yang masih menyimpan destination_id saja.
       final destId = data['destination_id'].toString();
-      final destDoc = await _destinationsCol.doc(destId).get();
-      final destData = destDoc.data() as Map<String, dynamic>?;
+      fallbackDestinationIds.add(destId);
+      pendingFallbackRows.add({...data, 'id': doc.id});
+    }
+
+    final destinationMap = await _getDestinationSnapshotsByIds(
+      fallbackDestinationIds.toList(),
+    );
+
+    for (final data in pendingFallbackRows) {
+      final destId = data['destination_id'].toString();
+      final destData = destinationMap[destId];
 
       results.add({
         ...data,
-        'id': doc.id,
         'title': destData?['title'] ?? 'Unknown',
         'image': destData?['image'] ?? '',
         'location': destData?['location'] ?? '',
       });
     }
+
     // Sort by date descending (newest first)
     results.sort((a, b) => (b['date'] ?? '').compareTo(a['date'] ?? ''));
     return results;
+  }
+
+  Future<Map<String, Map<String, dynamic>>> _getDestinationSnapshotsByIds(
+    List<String> ids,
+  ) async {
+    if (ids.isEmpty) return {};
+
+    final result = <String, Map<String, dynamic>>{};
+    for (var i = 0; i < ids.length; i += 10) {
+      final end = (i + 10) > ids.length ? ids.length : i + 10;
+      final chunk = ids.sublist(i, end);
+      final snapshot = await _destinationsCol
+          .where(FieldPath.documentId, whereIn: chunk)
+          .get();
+
+      for (final doc in snapshot.docs) {
+        result[doc.id] = doc.data() as Map<String, dynamic>;
+      }
+    }
+
+    return result;
   }
 
   // ============================================================

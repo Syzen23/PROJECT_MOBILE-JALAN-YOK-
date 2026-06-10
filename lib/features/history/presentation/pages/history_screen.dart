@@ -1,7 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/cached_app_image.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/firestore_service.dart';
 import 'history_detail_screen.dart';
@@ -40,20 +39,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  ImageProvider _imageProvider(String? path) {
-    final image = path == null || path.isEmpty
-        ? 'assets/images/Pantai.png'
-        : path;
-
-    if (image.startsWith('http://') || image.startsWith('https://')) {
-      return NetworkImage(image);
-    }
-    if (image.startsWith('assets/')) {
-      return AssetImage(image);
-    }
-    return FileImage(File(image));
-  }
-
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -78,7 +63,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   margin: const EdgeInsets.only(bottom: 16),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundImage: _imageProvider(item['image'] as String?),
+                      backgroundImage: appImageProvider(
+                        item['image'] as String?,
+                      ),
                     ),
                     title: Text(
                       item['title'] ?? '',

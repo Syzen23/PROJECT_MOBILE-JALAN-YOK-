@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../core/models/api_destination_model.dart';
+import '../../../../core/widgets/cached_app_image.dart';
 
 class DestinationDetailScreen extends StatelessWidget {
   final ApiDestination destination;
 
-  const DestinationDetailScreen({
-    super.key,
-    required this.destination,
-  });
+  const DestinationDetailScreen({super.key, required this.destination});
 
   @override
   Widget build(BuildContext context) {
@@ -28,26 +26,11 @@ class DestinationDetailScreen extends StatelessWidget {
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        destination.gambar,
+                      CachedAppImage(
+                        imageUrl: destination.gambar,
                         fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            color: Colors.grey.shade200,
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                color: Color(0xFF007AFF),
-                              ),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey.shade300,
-                            child: const Icon(Icons.landscape, size: 60, color: Colors.grey),
-                          );
-                        },
+                        memCacheWidth: 900,
+                        memCacheHeight: 640,
                       ),
                       // Lengkungan bagian bawah gambar (berwarna putih membulat tumpul)
                       Positioned(
@@ -95,12 +78,17 @@ class DestinationDetailScreen extends StatelessWidget {
 
                       // Kategori badge
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF007AFF).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: const Color(0xFF007AFF).withValues(alpha: 0.3),
+                            color: const Color(
+                              0xFF007AFF,
+                            ).withValues(alpha: 0.3),
                           ),
                         ),
                         child: Text(

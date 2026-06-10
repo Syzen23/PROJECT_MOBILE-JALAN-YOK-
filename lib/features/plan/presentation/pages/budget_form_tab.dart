@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:jalanyok2/core/models/destination_model.dart';
 import 'package:jalanyok2/core/data/vehicle_database.dart';
-import 'package:jalanyok2/core/services/vehicle_api_service.dart';
+import 'package:jalanyok2/core/repositories/vehicle_repository.dart';
 import 'budget_constants.dart';
 import 'budget_widgets.dart';
 
@@ -135,7 +135,9 @@ class BudgetFormTab extends StatelessWidget {
                   controllers['modelSearch']?.clear();
                   onStateChanged(
                     'vehicleMakes',
-                    await VehicleApiService.getMakes(isMotorcycle: isMotor),
+                    await VehicleRepository.instance.getMakes(
+                      isMotorcycle: isMotor,
+                    ),
                   );
                 },
                 style: SegmentedButton.styleFrom(
@@ -198,10 +200,8 @@ class BudgetFormTab extends StatelessWidget {
                     controllers['modelSearch']?.clear();
                     // Langsung tampilkan semua model dari merk ini
                     if (v != null) {
-                      final results = await VehicleApiService.searchVehicle(
-                        make: v,
-                        isMotorcycle: searchIsMotor,
-                      );
+                      final results = await VehicleRepository.instance
+                          .searchVehicle(make: v, isMotorcycle: searchIsMotor);
                       onStateChanged('searchResults', results);
                     }
                   },
@@ -332,10 +332,11 @@ class BudgetFormTab extends StatelessWidget {
                         onStateChanged('selectedVehicle', null);
                         onStateChanged('tipeKendaraan', null);
                         if (selectedMake != null) {
-                          final results = await VehicleApiService.searchVehicle(
-                            make: selectedMake,
-                            isMotorcycle: searchIsMotor,
-                          );
+                          final results = await VehicleRepository.instance
+                              .searchVehicle(
+                                make: selectedMake,
+                                isMotorcycle: searchIsMotor,
+                              );
                           onStateChanged('searchResults', results);
                         }
                       },
@@ -428,7 +429,7 @@ class BudgetFormTab extends StatelessWidget {
 
     onStateChanged('selectedVehicle', null);
 
-    final results = await VehicleApiService.searchVehicle(
+    final results = await VehicleRepository.instance.searchVehicle(
       make: make,
       model: query,
       isMotorcycle: state['searchIsMotor'] as bool? ?? false,

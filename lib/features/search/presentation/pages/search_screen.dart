@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/services/destination_api_service.dart';
 import '../../../../core/models/api_destination_model.dart';
+import '../../../../core/repositories/destination_repository.dart';
+import '../../../../core/widgets/cached_app_image.dart';
 import '../../../home/presentation/pages/destination_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -16,6 +19,8 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _showResults = false;
   List<ApiDestination> _searchResults = [];
   bool _isLoading = false;
+  Timer? _searchDebounce;
+  int _searchRequestId = 0;
 
   final List<String> _riwayatPencarian = [
     'Pantai Kuta',
@@ -37,12 +42,14 @@ class _SearchScreenState extends State<SearchScreen> {
     _searchController.addListener(_onSearchChanged);
   }
 
-  void _onSearchChanged() async {
+  void _onSearchChanged() {
+    _searchDebounce?.cancel();
     final query = _searchController.text.trim();
     if (query.isEmpty) {
       setState(() {
         _showResults = false;
         _searchResults = [];
+        _isLoading = false;
       });
       return;
     }
@@ -52,16 +59,23 @@ class _SearchScreenState extends State<SearchScreen> {
       _isLoading = true;
     });
 
-    final results = await DestinationApiService.instance.searchDestinations(query);
+    final requestId = ++_searchRequestId;
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () async {
+      final results = await DestinationRepository.instance.searchDestinations(
+        query,
+      );
 
-    setState(() {
-      _searchResults = results;
-      _isLoading = false;
+      if (!mounted || requestId != _searchRequestId) return;
+      setState(() {
+        _searchResults = results;
+        _isLoading = false;
+      });
     });
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -84,7 +98,11 @@ class _SearchScreenState extends State<SearchScreen> {
                 color: Colors.grey.shade200,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 16),
+              child: const Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.black,
+                size: 16,
+              ),
             ),
           ),
         ),
@@ -104,7 +122,10 @@ class _SearchScreenState extends State<SearchScreen> {
         children: [
           // Search Bar
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 16.0,
+            ),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
@@ -122,7 +143,11 @@ class _SearchScreenState extends State<SearchScreen> {
                   border: InputBorder.none,
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear, color: Colors.grey, size: 20),
+                          icon: const Icon(
+                            Icons.clear,
+                            color: Colors.grey,
+                            size: 20,
+                          ),
                           onPressed: () => _searchController.clear(),
                         )
                       : null,
@@ -131,7 +156,7 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
           ),
-          
+
           Divider(color: Colors.blue.shade100, thickness: 1, height: 1),
           const SizedBox(height: 16),
 
@@ -187,7 +212,7 @@ class _SearchScreenState extends State<SearchScreen> {
               return _buildChip(item, isHistory: true);
             }).toList(),
           ),
-          
+
           const SizedBox(height: 32),
 
           // Pencarian populer
@@ -233,10 +258,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ],
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.black87,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.black87, fontSize: 12),
             ),
           ],
         ),
@@ -246,7 +268,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildSearchResults() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFF007AFF)));
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF007AFF)),
+      );
     }
 
     if (_searchResults.isEmpty) {
@@ -273,9 +297,7 @@ class _SearchScreenState extends State<SearchScreen> {
       onTap: () {
         Navigator.of(context, rootNavigator: true).push(
           MaterialPageRoute(
-            builder: (context) => DestinationDetailScreen(
-              destination: item,
-            ),
+            builder: (context) => DestinationDetailScreen(destination: item),
           ),
         );
       },
@@ -294,42 +316,25 @@ class _SearchScreenState extends State<SearchScreen> {
               padding: const EdgeInsets.all(10.0),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  item.gambar,
+                child: CachedAppImage(
+                  imageUrl: item.gambar,
                   width: 80,
                   height: 90,
                   fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      width: 80,
-                      height: 90,
-                      color: Colors.grey.shade200,
-                      child: const Center(
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF007AFF)),
-                        ),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 80,
-                      height: 90,
-                      color: Colors.grey.shade300,
-                      child: const Icon(Icons.landscape, color: Colors.grey),
-                    );
-                  },
+                  memCacheWidth: 160,
+                  memCacheHeight: 180,
                 ),
               ),
             ),
-            
+
             // Details
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.only(top: 12.0, right: 12.0, bottom: 12.0),
+                padding: const EdgeInsets.only(
+                  top: 12.0,
+                  right: 12.0,
+                  bottom: 12.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -342,13 +347,29 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    _buildInfoRow(Icons.location_on, Colors.black87, item.lokasi),
+                    _buildInfoRow(
+                      Icons.location_on,
+                      Colors.black87,
+                      item.lokasi,
+                    ),
                     const SizedBox(height: 4),
-                    _buildInfoRow(Icons.star, Colors.amber, "${item.rating} (Grade)"),
+                    _buildInfoRow(
+                      Icons.star,
+                      Colors.amber,
+                      "${item.rating} (Grade)",
+                    ),
                     const SizedBox(height: 4),
-                    _buildInfoRow(Icons.category_outlined, const Color(0xFF007AFF), item.kategori),
+                    _buildInfoRow(
+                      Icons.category_outlined,
+                      const Color(0xFF007AFF),
+                      item.kategori,
+                    ),
                     const SizedBox(height: 4),
-                    _buildInfoRow(Icons.map_outlined, Colors.green, item.provinsi),
+                    _buildInfoRow(
+                      Icons.map_outlined,
+                      Colors.green,
+                      item.provinsi,
+                    ),
                   ],
                 ),
               ),

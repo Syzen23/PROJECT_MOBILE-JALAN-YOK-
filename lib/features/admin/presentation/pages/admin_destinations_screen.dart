@@ -1,14 +1,15 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/services/firestore_service.dart';
 import '../../../../core/models/destination_model.dart';
+import '../../../../core/widgets/cached_app_image.dart';
 
 class AdminDestinationsScreen extends StatefulWidget {
   const AdminDestinationsScreen({super.key});
 
   @override
-  State<AdminDestinationsScreen> createState() => _AdminDestinationsScreenState();
+  State<AdminDestinationsScreen> createState() =>
+      _AdminDestinationsScreenState();
 }
 
 class _AdminDestinationsScreenState extends State<AdminDestinationsScreen> {
@@ -43,7 +44,10 @@ class _AdminDestinationsScreenState extends State<AdminDestinationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kelola Destinasi', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Kelola Destinasi',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -53,12 +57,13 @@ class _AdminDestinationsScreenState extends State<AdminDestinationsScreen> {
                 final dest = destinations[index];
                 return ListTile(
                   leading: CircleAvatar(
-                    backgroundImage: dest.image.startsWith('assets/')
-                        ? AssetImage(dest.image)
-                        : FileImage(File(dest.image)) as ImageProvider,
+                    backgroundImage: appImageProvider(dest.image),
                     onBackgroundImageError: (exception, stackTrace) {},
                   ),
-                  title: Text(dest.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text(
+                    dest.title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   subtitle: Text(dest.location),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -66,7 +71,10 @@ class _AdminDestinationsScreenState extends State<AdminDestinationsScreen> {
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.blue),
                         onPressed: () async {
-                          await context.push('/admin/destination-form', extra: dest);
+                          await context.push(
+                            '/admin/destination-form',
+                            extra: dest,
+                          );
                           _loadDestinations();
                         },
                       ),

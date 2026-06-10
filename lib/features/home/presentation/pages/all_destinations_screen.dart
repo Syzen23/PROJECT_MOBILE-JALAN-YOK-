@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/services/destination_api_service.dart';
 import '../../../../core/models/api_destination_model.dart';
+import '../../../../core/repositories/destination_repository.dart';
+import '../../../../core/widgets/cached_app_image.dart';
 import 'destination_detail_screen.dart';
 
 class AllDestinationsScreen extends StatefulWidget {
@@ -22,6 +25,7 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
   String? _selectedProvinsi;
   String _sortBy = 'rating'; // 'rating', 'nama', 'provinsi'
   bool _showFilters = false;
+  Timer? _filterDebounce;
 
   // Available filter options (populated from API data)
   List<String> _kategoriList = [];
@@ -31,11 +35,12 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
   void initState() {
     super.initState();
     _loadDestinations();
-    _searchController.addListener(_applyFilters);
+    _searchController.addListener(_onSearchFilterChanged);
   }
 
   @override
   void dispose() {
+    _filterDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -43,7 +48,7 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
   Future<void> _loadDestinations() async {
     setState(() => _isLoading = true);
 
-    final data = await DestinationApiService.instance.getAllDestinations();
+    final data = await DestinationRepository.instance.getAllDestinations();
 
     // Extract unique kategori & provinsi dari data API
     final kategoriSet = <String>{};
@@ -61,6 +66,11 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
     });
 
     _applyFilters();
+  }
+
+  void _onSearchFilterChanged() {
+    _filterDebounce?.cancel();
+    _filterDebounce = Timer(const Duration(milliseconds: 250), _applyFilters);
   }
 
   void _applyFilters() {
@@ -138,7 +148,11 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
                 color: Colors.grey.shade200,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 16),
+              child: const Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.black,
+                size: 16,
+              ),
             ),
           ),
         ),
@@ -165,7 +179,9 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
                 smallSize: 8,
                 child: Icon(
                   _showFilters ? Icons.filter_list_off : Icons.filter_list,
-                  color: _showFilters ? const Color(0xFF007AFF) : Colors.black87,
+                  color: _showFilters
+                      ? const Color(0xFF007AFF)
+                      : Colors.black87,
                 ),
               ),
             ),
@@ -191,14 +207,21 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
                 decoration: InputDecoration(
                   icon: const Icon(Icons.search, color: Colors.grey, size: 20),
                   hintText: 'Cari nama, kota, atau provinsi...',
-                  hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                  hintStyle: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 13,
+                  ),
                   border: InputBorder.none,
                   suffixIcon: _searchController.text.isNotEmpty
                       ? GestureDetector(
                           onTap: () {
                             _searchController.clear();
                           },
-                          child: const Icon(Icons.clear, color: Colors.grey, size: 18),
+                          child: const Icon(
+                            Icons.clear,
+                            color: Colors.grey,
+                            size: 18,
+                          ),
                         )
                       : null,
                 ),
@@ -215,26 +238,29 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
           // Destinations Grid
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF007AFF)))
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF007AFF)),
+                  )
                 : _filteredDestinations.isEmpty
-                    ? _buildEmptyState()
-                    : RefreshIndicator(
-                        color: const Color(0xFF007AFF),
-                        onRefresh: _loadDestinations,
-                        child: GridView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                ? _buildEmptyState()
+                : RefreshIndicator(
+                    color: const Color(0xFF007AFF),
+                    onRefresh: _loadDestinations,
+                    child: GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             childAspectRatio: 0.72,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                           ),
-                          itemCount: _filteredDestinations.length,
-                          itemBuilder: (context, index) {
-                            return _buildGridCard(_filteredDestinations[index]);
-                          },
-                        ),
-                      ),
+                      itemCount: _filteredDestinations.length,
+                      itemBuilder: (context, index) {
+                        return _buildGridCard(_filteredDestinations[index]);
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -282,7 +308,11 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
           // Kategori chips
           const Text(
             'Kategori',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.black54,
+            ),
           ),
           const SizedBox(height: 8),
           SizedBox(
@@ -304,12 +334,19 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF007AFF) : Colors.white,
+                        color: isSelected
+                            ? const Color(0xFF007AFF)
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: isSelected ? const Color(0xFF007AFF) : Colors.grey.shade300,
+                          color: isSelected
+                              ? const Color(0xFF007AFF)
+                              : Colors.grey.shade300,
                         ),
                       ),
                       child: Row(
@@ -326,7 +363,9 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               color: isSelected ? Colors.white : Colors.black87,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                           ),
                         ],
@@ -342,7 +381,11 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
           // Provinsi dropdown
           const Text(
             'Provinsi',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.black54,
+            ),
           ),
           const SizedBox(height: 8),
           Container(
@@ -415,7 +458,9 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
               setState(() => _sortBy = value);
               _applyFilters();
             },
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             offset: const Offset(0, 36),
             itemBuilder: (context) => [
               _buildSortItem('rating', 'Rating Tertinggi', Icons.star),
@@ -443,7 +488,11 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
                     ),
                   ),
                   const SizedBox(width: 2),
-                  const Icon(Icons.keyboard_arrow_down, size: 14, color: Color(0xFF007AFF)),
+                  const Icon(
+                    Icons.keyboard_arrow_down,
+                    size: 14,
+                    color: Color(0xFF007AFF),
+                  ),
                 ],
               ),
             ),
@@ -453,13 +502,21 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
     );
   }
 
-  PopupMenuItem<String> _buildSortItem(String value, String label, IconData icon) {
+  PopupMenuItem<String> _buildSortItem(
+    String value,
+    String label,
+    IconData icon,
+  ) {
     final isActive = _sortBy == value;
     return PopupMenuItem<String>(
       value: value,
       child: Row(
         children: [
-          Icon(icon, size: 16, color: isActive ? const Color(0xFF007AFF) : Colors.grey),
+          Icon(
+            icon,
+            size: 16,
+            color: isActive ? const Color(0xFF007AFF) : Colors.grey,
+          ),
           const SizedBox(width: 8),
           Text(
             label,
@@ -553,30 +610,12 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
                       topLeft: Radius.circular(16),
                       topRight: Radius.circular(16),
                     ),
-                    child: Image.network(
-                      dest.gambar,
+                    child: CachedAppImage(
+                      imageUrl: dest.gambar,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          color: Colors.grey.shade100,
-                          child: const Center(
-                            child: SizedBox(
-                              width: 20, height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF007AFF)),
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey.shade200,
-                          child: const Center(
-                            child: Icon(Icons.landscape, color: Colors.grey, size: 32),
-                          ),
-                        );
-                      },
+                      memCacheWidth: 360,
+                      memCacheHeight: 280,
                     ),
                   ),
                   // Rating badge
@@ -584,7 +623,10 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
                     top: 8,
                     right: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(8),
@@ -602,7 +644,10 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
                           const SizedBox(width: 2),
                           Text(
                             dest.rating.toString(),
-                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
@@ -613,7 +658,10 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
                     top: 8,
                     left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF007AFF).withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(8),
@@ -651,7 +699,11 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.location_on, color: Colors.grey, size: 11),
+                        const Icon(
+                          Icons.location_on,
+                          color: Colors.grey,
+                          size: 11,
+                        ),
                         const SizedBox(width: 2),
                         Expanded(
                           child: Text(
@@ -674,7 +726,8 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
                         onPressed: () {
                           Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute(
-                              builder: (context) => DestinationDetailScreen(destination: dest),
+                              builder: (context) =>
+                                  DestinationDetailScreen(destination: dest),
                             ),
                           );
                         },
@@ -686,7 +739,10 @@ class _AllDestinationsScreenState extends State<AllDestinationsScreen> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: const Text('Lihat Detail', style: TextStyle(fontSize: 10)),
+                        child: const Text(
+                          'Lihat Detail',
+                          style: TextStyle(fontSize: 10),
+                        ),
                       ),
                     ),
                   ],
