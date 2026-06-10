@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:jalanyok2/core/data/vehicle_database.dart';
+import 'package:jalanyok2/core/repositories/vehicle_repository.dart';
 import 'package:jalanyok2/core/services/firestore_service.dart';
 import 'package:jalanyok2/features/plan/presentation/pages/budget_constants.dart';
 
@@ -22,6 +24,13 @@ class _HistoryEditScreenState extends State<HistoryEditScreen> {
   late bool _isTiketOtomatis;
   late bool _isParkirOtomatis;
   late bool _isDanaDarurat;
+  final TextEditingController _modelSearchController = TextEditingController();
+  bool _searchIsMotor = false;
+  String? _selectedMake;
+  VehicleEntry? _selectedVehicle;
+  List<String> _vehicleMakes = [];
+  List<VehicleEntry> _vehicleResults = [];
+  bool _isVehicleLoading = false;
   bool _isSaving = false;
 
   @override
@@ -79,6 +88,12 @@ class _HistoryEditScreenState extends State<HistoryEditScreen> {
     _isTiketOtomatis = _boolValue(state['isTiketOtomatis'], true);
     _isParkirOtomatis = _boolValue(state['isParkirOtomatis'], true);
     _isDanaDarurat = _boolValue(state['isDanaDarurat'], false);
+    _selectedVehicle = _vehicleFromMap(state['selectedVehicle']);
+    _searchIsMotor =
+        _boolValue(state['searchIsMotor'], _transport == 'Motor') ||
+        (_selectedVehicle?.isMotorcycle ?? false);
+    _selectedMake = state['selectedMake']?.toString() ?? _selectedVehicle?.make;
+    _loadVehicleMakes();
   }
 
   @override
@@ -86,6 +101,7 @@ class _HistoryEditScreenState extends State<HistoryEditScreen> {
     for (final controller in _controllers.values) {
       controller.dispose();
     }
+    _modelSearchController.dispose();
     super.dispose();
   }
 
@@ -115,6 +131,49 @@ class _HistoryEditScreenState extends State<HistoryEditScreen> {
     return value is bool ? value : fallback;
   }
 
+  VehicleEntry? _vehicleFromMap(dynamic value) {
+    if (value is! Map) return null;
+    final map = Map<String, dynamic>.from(value);
+    final make = map['make']?.toString() ?? '';
+    final model = map['model']?.toString() ?? '';
+    if (make.isEmpty && model.isEmpty) return null;
+
+    return VehicleEntry(
+      id: (map['id'] as num?)?.toInt(),
+      make: make,
+      model: model,
+      type:
+          map['type']?.toString() ??
+          (_transport == 'Motor' ? 'Motor' : 'Mobil'),
+      year: (map['year'] as num?)?.toInt(),
+      transmission: map['transmission']?.toString(),
+      colour: map['colour']?.toString(),
+      tankCapacityLiter: (map['tankCapacityLiter'] as num?)?.toDouble(),
+      price: (map['price'] as num?)?.toDouble(),
+      engineCc: (map['engineCc'] as num?)?.toInt() ?? 0,
+      fuelType: map['fuelType']?.toString() ?? 'Bensin',
+      consumption: (map['consumption'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
+  Map<String, dynamic>? _vehicleToMap(VehicleEntry? vehicle) {
+    if (vehicle == null) return null;
+    return {
+      'id': vehicle.id,
+      'make': vehicle.make,
+      'model': vehicle.model,
+      'type': vehicle.type,
+      'year': vehicle.year,
+      'transmission': vehicle.transmission,
+      'colour': vehicle.colour,
+      'tankCapacityLiter': vehicle.tankCapacityLiter,
+      'price': vehicle.price,
+      'engineCc': vehicle.engineCc,
+      'fuelType': vehicle.fuelType,
+      'consumption': vehicle.consumption,
+    };
+  }
+
   double _fieldDouble(String key) => _doubleValue(_controllers[key]?.text);
 
   int _fieldInt(String key, [int fallback = 0]) {
@@ -133,6 +192,132 @@ class _HistoryEditScreenState extends State<HistoryEditScreen> {
     if (selected != null) {
       _controllers['date']!.text = selected.toIso8601String().split('T').first;
     }
+  }
+
+  Future<void> _loadVehicleMakes() async {
+    setState(() => _isVehicleLoading = true);
+    try {
+      final makes = await VehicleRepository.instance.getMakes(
+        isMotorcycle: _searchIsMotor,
+      );
+      if (!mounted) return;
+      setState(() {
+        _vehicleMakes = makes;
+        _isVehicleLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _vehicleMakes = _searchIsMotor
+            ? VehicleDatabase.motorcycleMakes
+            : VehicleDatabase.carMakes;
+        _isVehicleLoading = false;
+      });
+    }
+  }
+
+  Future<void> _changeVehicleKind(bool isMotor) async {
+    setState(() {
+      _searchIsMotor = isMotor;
+      _selectedMake = null;
+      _selectedVehicle = null;
+      _vehicleResults = [];
+      _modelSearchController.clear();
+      _transport = isMotor ? 'Motor' : 'Mobil';
+    });
+    await _loadVehicleMakes();
+  }
+
+  Future<void> _loadVehiclesByMake(String make) async {
+    setState(() {
+      _selectedMake = make;
+      _selectedVehicle = null;
+      _vehicleResults = [];
+      _isVehicleLoading = true;
+      _modelSearchController.clear();
+    });
+
+    try {
+      final results = await VehicleRepository.instance.searchVehicle(
+        make: make,
+        isMotorcycle: _searchIsMotor,
+      );
+      if (!mounted) return;
+      setState(() {
+        _vehicleResults = results;
+        _isVehicleLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isVehicleLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal fetch kendaraan: $e')));
+    }
+  }
+
+  Future<void> _searchVehicle() async {
+    final make = _selectedMake;
+    if (make == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih merk kendaraan dulu.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _selectedVehicle = null;
+      _isVehicleLoading = true;
+    });
+
+    try {
+      final results = await VehicleRepository.instance.searchVehicle(
+        make: make,
+        model: _modelSearchController.text.trim(),
+        isMotorcycle: _searchIsMotor,
+      );
+      if (!mounted) return;
+      setState(() {
+        _vehicleResults = results;
+        _isVehicleLoading = false;
+      });
+      if (results.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kendaraan tidak ditemukan.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isVehicleLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal fetch kendaraan: $e')));
+    }
+  }
+
+  void _selectVehicle(VehicleEntry vehicle) {
+    setState(() {
+      _selectedVehicle = vehicle;
+      _selectedMake = vehicle.make;
+      _vehicleResults = [];
+      _searchIsMotor = vehicle.isMotorcycle;
+      _transport = vehicle.isMotorcycle ? 'Motor' : 'Mobil';
+      _controllers['bbm']!.text = vehicle.consumption.toStringAsFixed(0);
+
+      final apiFuelType = vehicle.fuelType;
+      if (fuelTypes.any((fuel) => fuel['label'] == apiFuelType)) {
+        _fuelType = apiFuelType;
+      } else if (apiFuelType.toLowerCase().contains('solar') ||
+          apiFuelType.toLowerCase().contains('dex')) {
+        _fuelType = 'Solar';
+      } else {
+        _fuelType = 'Pertalite';
+      }
+    });
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('${vehicle.displayName} dipilih.')));
   }
 
   Map<String, double> _calculateCosts() {
@@ -227,6 +412,9 @@ class _HistoryEditScreenState extends State<HistoryEditScreen> {
       'isTiketOtomatis': _isTiketOtomatis,
       'isParkirOtomatis': _isParkirOtomatis,
       'isDanaDarurat': _isDanaDarurat,
+      'searchIsMotor': _searchIsMotor,
+      'selectedMake': _selectedMake,
+      'selectedVehicle': _vehicleToMap(_selectedVehicle),
     };
     final details = {
       'form': {
@@ -266,6 +454,7 @@ class _HistoryEditScreenState extends State<HistoryEditScreen> {
   @override
   Widget build(BuildContext context) {
     final isKendaraanPribadi = _transport == 'Mobil' || _transport == 'Motor';
+    final hasSelectedVehicle = _selectedVehicle != null;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -293,12 +482,16 @@ class _HistoryEditScreenState extends State<HistoryEditScreen> {
                         _controllers['budget']!,
                         isNumber: true,
                       ),
-                      _editDropdown<String>(
-                        'Transportasi',
-                        _transport,
-                        ['Mobil', 'Motor', 'Bus', 'Kereta'],
-                        (value) => setState(() => _transport = value),
-                      ),
+                      _vehicleSearchSection(),
+                      if (hasSelectedVehicle)
+                        _selectedVehicleSummary()
+                      else
+                        _editDropdown<String>('Transportasi', _transport, [
+                          'Mobil',
+                          'Motor',
+                          'Bus',
+                          'Kereta',
+                        ], _changeTransport),
                       if (isKendaraanPribadi) ...[
                         _editDropdown<String>(
                           'Jenis BBM',
@@ -464,6 +657,294 @@ class _HistoryEditScreenState extends State<HistoryEditScreen> {
                   ),
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _changeTransport(String value) {
+    final shouldReloadMakes = value == 'Mobil' || value == 'Motor';
+    setState(() {
+      _transport = value;
+      if (shouldReloadMakes) {
+        _searchIsMotor = value == 'Motor';
+        _selectedMake = null;
+        _vehicleResults = [];
+      }
+    });
+    if (shouldReloadMakes) _loadVehicleMakes();
+  }
+
+  Widget _vehicleSearchSection() {
+    final makes = _vehicleMakes.isNotEmpty
+        ? _vehicleMakes
+        : (_searchIsMotor
+              ? VehicleDatabase.motorcycleMakes
+              : VehicleDatabase.carMakes);
+    final safeMake = makes.contains(_selectedMake) ? _selectedMake : null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.deepPurple.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.deepPurple.shade100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.directions_car_filled,
+                size: 16,
+                color: Colors.deepPurple,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Cari Data Kendaraan',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
+              ),
+              const Spacer(),
+              if (_isVehicleLoading)
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Text(
+                'Jenis:',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(
+                      value: false,
+                      label: Text('Mobil', style: TextStyle(fontSize: 11)),
+                    ),
+                    ButtonSegment(
+                      value: true,
+                      label: Text('Motor', style: TextStyle(fontSize: 11)),
+                    ),
+                  ],
+                  selected: {_searchIsMotor},
+                  onSelectionChanged: (selection) {
+                    _changeVehicleKind(selection.first);
+                  },
+                  style: SegmentedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _plainDropdown<String>(
+            label: 'Merk Kendaraan',
+            value: safeMake,
+            hint: 'Pilih merk...',
+            values: makes,
+            onChanged: (value) {
+              if (value != null) _loadVehiclesByMake(value);
+            },
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: _editField(
+                  'Cari Model (opsional)',
+                  _modelSearchController,
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 40,
+                child: ElevatedButton(
+                  onPressed: _isVehicleLoading ? null : _searchVehicle,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                  ),
+                  child: const Icon(Icons.search, size: 18),
+                ),
+              ),
+            ],
+          ),
+          if (_vehicleResults.isNotEmpty && _selectedVehicle == null) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Ditemukan ${_vehicleResults.length} kendaraan:',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 200),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.deepPurple.shade100),
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: const EdgeInsets.all(4),
+                itemCount: _vehicleResults.length,
+                separatorBuilder: (_, index) =>
+                    Divider(height: 1, color: Colors.grey.shade200),
+                itemBuilder: (context, index) {
+                  final vehicle = _vehicleResults[index];
+                  return ListTile(
+                    dense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                    title: Text(
+                      vehicle.displayName,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      '${vehicle.detailInfo} | ${vehicle.consumption.toStringAsFixed(0)} km/l',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      size: 16,
+                      color: Colors.deepPurple,
+                    ),
+                    onTap: () => _selectVehicle(vehicle),
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _selectedVehicleSummary() {
+    final vehicle = _selectedVehicle!;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.shade100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.check_circle,
+                color: Color(0xFF007AFF),
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${vehicle.displayName} | $_transport',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                onPressed: () async {
+                  setState(() => _selectedVehicle = null);
+                  if (_selectedMake != null) {
+                    await _loadVehiclesByMake(_selectedMake!);
+                  }
+                },
+                icon: const Icon(Icons.close, size: 16, color: Colors.grey),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _vehicleInfoRow(Icons.category, 'Tipe', vehicle.type),
+          _vehicleInfoRow(Icons.local_gas_station, 'BBM', vehicle.fuelType),
+          if (vehicle.engineCc > 0)
+            _vehicleInfoRow(Icons.settings, 'Mesin', vehicle.engineDisplay),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.speed, size: 14, color: Colors.green.shade700),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Konsumsi BBM: ${vehicle.consumption.toStringAsFixed(0)} km/l',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _vehicleInfoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 12, color: Colors.deepPurple.shade300),
+          const SizedBox(width: 6),
+          Text(
+            '$label: ',
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -645,6 +1126,59 @@ class _HistoryEditScreenState extends State<HistoryEditScreen> {
               onChanged: (value) {
                 if (value != null) onChanged(value);
               },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _plainDropdown<T>({
+    required String label,
+    required T? value,
+    required String hint,
+    required List<T> values,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade400),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<T>(
+              value: value,
+              isExpanded: true,
+              hint: Text(
+                hint,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              ),
+              icon: const Icon(Icons.keyboard_arrow_down, size: 20),
+              style: const TextStyle(fontSize: 12, color: Colors.black87),
+              items: values
+                  .map(
+                    (item) => DropdownMenuItem<T>(
+                      value: item,
+                      child: Text(item.toString()),
+                    ),
+                  )
+                  .toList(),
+              onChanged: onChanged,
             ),
           ),
         ),
