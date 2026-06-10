@@ -77,6 +77,13 @@ class _PlanScreenState extends State<PlanScreen>
     'total': 0,
   };
 
+  Map<String, double> _budgetSettings = {
+    'default_ticket': 10000,
+    'parking_motor': 5000,
+    'parking_car': 10000,
+    'emergency_percent': 10,
+  };
+
   // Destination
   List<Destination> destinations = [];
   Destination? _selectedDestination;
@@ -95,6 +102,20 @@ class _PlanScreenState extends State<PlanScreen>
     _fetchCurrentLocation();
     _loadDestinations();
     _loadVehicleMakes();
+    _loadBudgetSettings();
+  }
+
+  Future<void> _loadBudgetSettings() async {
+    final settings = await FirestoreService.instance.getBudgetSettings();
+    if (!mounted) return;
+    setState(() {
+      _budgetSettings = {
+        'default_ticket': (settings['default_ticket'] as num).toDouble(),
+        'parking_motor': (settings['parking_motor'] as num).toDouble(),
+        'parking_car': (settings['parking_car'] as num).toDouble(),
+        'emergency_percent': (settings['emergency_percent'] as num).toDouble(),
+      };
+    });
   }
 
   Future<void> _loadDestinations() async {
@@ -281,11 +302,15 @@ class _PlanScreenState extends State<PlanScreen>
         : 0;
     // 4. Tiket masuk
     _biaya['tiket'] = (_state['isTiketOtomatis'] as bool)
-        ? _selectedDestination!.tiket
+        ? (_selectedDestination!.tiket > 0
+              ? _selectedDestination!.tiket
+              : _budgetSettings['default_ticket']!)
         : (double.tryParse(_controllers['tiket']!.text) ?? 0);
     // 5. Parkir
     _biaya['parkir'] = (_state['isParkirOtomatis'] as bool)
-        ? (transport == 'Motor' ? 5000 : 10000)
+        ? (transport == 'Motor'
+              ? _budgetSettings['parking_motor']!
+              : _budgetSettings['parking_car']!)
         : (double.tryParse(_controllers['parkir']!.text) ?? 0);
     // 6. Makan
     final budgetMakan = double.tryParse(_controllers['makan']!.text) ?? 0;
@@ -313,7 +338,8 @@ class _PlanScreenState extends State<PlanScreen>
         _biaya['lainnya']!;
     // 10. Dana darurat
     _biaya['danaDarurat'] = (_state['isDanaDarurat'] as bool)
-        ? _biaya['subtotal']! * 0.10
+        ? _biaya['subtotal']! *
+              ((_budgetSettings['emergency_percent'] ?? 10) / 100)
         : 0;
     // Total
     _biaya['total'] = _biaya['subtotal']! + _biaya['danaDarurat']!;
@@ -356,6 +382,16 @@ class _PlanScreenState extends State<PlanScreen>
 
     try {
       await FirestoreService.instance.insertTripHistory(history);
+      await FirestoreService.instance.addAuditLog(
+        actorId: user.id!,
+        actorName: user.name,
+        action: 'save_trip_history',
+        target: _selectedDestination!.title,
+        metadata: {
+          'transport': _state['transport'],
+          'total_budget': totalBudget,
+        },
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Berhasil disimpan ke Riwayat!')),
@@ -403,6 +439,7 @@ class _PlanScreenState extends State<PlanScreen>
         'selectedMake': _state['selectedMake'],
         'searchIsMotor': _state['searchIsMotor'],
         'selectedVehicle': _vehicleSnapshot(selectedVehicle),
+        'budgetSettings': Map<String, double>.from(_budgetSettings),
       },
       'biaya': Map<String, double>.from(_biaya),
     };

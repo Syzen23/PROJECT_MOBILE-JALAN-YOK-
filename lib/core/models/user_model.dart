@@ -10,6 +10,7 @@ class User {
   final String? gender;
   final String? address;
   final String? profileImageUrl;
+  final bool isActive;
 
   User({
     this.id,
@@ -23,6 +24,7 @@ class User {
     this.gender,
     this.address,
     this.profileImageUrl,
+    this.isActive = true,
   });
 
   Map<String, dynamic> toMap() {
@@ -38,6 +40,7 @@ class User {
       'gender': gender,
       'address': address,
       'profileImageUrl': profileImageUrl,
+      'is_active': isActive,
     };
   }
 
@@ -54,6 +57,37 @@ class User {
       gender: map['gender'],
       address: map['address'],
       profileImageUrl: map['profileImageUrl'],
+      isActive: map['is_active'] is bool ? map['is_active'] as bool : true,
+    );
+  }
+
+  User copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? password,
+    String? role,
+    String? phoneNumber,
+    int? age,
+    String? dateOfBirth,
+    String? gender,
+    String? address,
+    String? profileImageUrl,
+    bool? isActive,
+  }) {
+    return User(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      password: password ?? this.password,
+      role: role ?? this.role,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      age: age ?? this.age,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      gender: gender ?? this.gender,
+      address: address ?? this.address,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      isActive: isActive ?? this.isActive,
     );
   }
 }

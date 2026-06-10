@@ -14,6 +14,9 @@ class FirestoreService {
   CollectionReference get _usersCol => _db.collection('users');
   CollectionReference get _tripHistoryCol => _db.collection('trip_history');
   CollectionReference get _chatSessionsCol => _db.collection('chat_sessions');
+  CollectionReference get _auditLogsCol => _db.collection('audit_logs');
+  DocumentReference get _appSettingsDoc =>
+      _db.collection('app_settings').doc('budget_defaults');
 
   // ============================================================
   // INITIALIZATION - Seed dummy data if collections are empty
@@ -88,6 +91,7 @@ class FirestoreService {
       'email': 'admin@jalanyok.com',
       'password': 'password123',
       'role': 'admin',
+      'is_active': true,
       'phone_number': '081234567890',
       'age': 25,
       'date_of_birth': '1999-01-01',
@@ -99,6 +103,7 @@ class FirestoreService {
       'email': 'user@jalanyok.com',
       'password': 'password123',
       'role': 'user',
+      'is_active': true,
       'phone_number': '089876543210',
       'age': 20,
       'date_of_birth': '2004-05-05',
@@ -182,10 +187,12 @@ class FirestoreService {
         .get();
     if (snapshot.docs.isNotEmpty) {
       final doc = snapshot.docs.first;
-      return User.fromMap(
+      final user = User.fromMap(
         doc.data() as Map<String, dynamic>,
         documentId: doc.id,
       );
+      if (!user.isActive) return null;
+      return user;
     }
     return null;
   }
@@ -235,6 +242,18 @@ class FirestoreService {
         documentId: doc.id,
       );
     }).toList();
+  }
+
+  Future<void> updateUserRole(String userId, String role) async {
+    await _usersCol.doc(userId).update({'role': role});
+  }
+
+  Future<void> updateUserActiveStatus(String userId, bool isActive) async {
+    await _usersCol.doc(userId).update({'is_active': isActive});
+  }
+
+  Future<void> deleteUser(String userId) async {
+    await _usersCol.doc(userId).delete();
   }
 
   // ============================================================
@@ -324,6 +343,55 @@ class FirestoreService {
     return results;
   }
 
+  Future<List<Map<String, dynamic>>> getAllTripHistory() async {
+    final snapshot = await _tripHistoryCol.get();
+
+    final results = <Map<String, dynamic>>[];
+    final fallbackDestinationIds = <String>{};
+    final pendingFallbackRows = <Map<String, dynamic>>[];
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      final snapshotTitle = data['destination_title'] as String?;
+      final snapshotImage = data['destination_image'] as String?;
+      final snapshotLocation = data['destination_location'] as String?;
+
+      if (snapshotTitle != null && snapshotTitle.isNotEmpty) {
+        results.add({
+          ...data,
+          'id': doc.id,
+          'title': snapshotTitle,
+          'image': snapshotImage ?? '',
+          'location': snapshotLocation ?? '',
+        });
+        continue;
+      }
+
+      final destId = data['destination_id'].toString();
+      fallbackDestinationIds.add(destId);
+      pendingFallbackRows.add({...data, 'id': doc.id});
+    }
+
+    final destinationMap = await _getDestinationSnapshotsByIds(
+      fallbackDestinationIds.toList(),
+    );
+
+    for (final data in pendingFallbackRows) {
+      final destId = data['destination_id'].toString();
+      final destData = destinationMap[destId];
+
+      results.add({
+        ...data,
+        'title': destData?['title'] ?? 'Unknown',
+        'image': destData?['image'] ?? '',
+        'location': destData?['location'] ?? '',
+      });
+    }
+
+    results.sort((a, b) => (b['date'] ?? '').compareTo(a['date'] ?? ''));
+    return results;
+  }
+
   Future<Map<String, Map<String, dynamic>>> _getDestinationSnapshotsByIds(
     List<String> ids,
   ) async {
@@ -404,5 +472,64 @@ class FirestoreService {
 
   Future<void> deleteChatSession(String sessionId) async {
     await _chatSessionsCol.doc(sessionId).delete();
+  }
+
+  // ============================================================
+  // ADMIN SETTINGS & AUDIT
+  // ============================================================
+  Future<Map<String, dynamic>> getBudgetSettings() async {
+    final snapshot = await _appSettingsDoc.get();
+    if (!snapshot.exists) {
+      return {
+        'default_ticket': 10000.0,
+        'parking_motor': 5000.0,
+        'parking_car': 10000.0,
+        'emergency_percent': 10.0,
+      };
+    }
+    final data = snapshot.data() as Map<String, dynamic>;
+    return {
+      'default_ticket': (data['default_ticket'] as num?)?.toDouble() ?? 10000.0,
+      'parking_motor': (data['parking_motor'] as num?)?.toDouble() ?? 5000.0,
+      'parking_car': (data['parking_car'] as num?)?.toDouble() ?? 10000.0,
+      'emergency_percent':
+          (data['emergency_percent'] as num?)?.toDouble() ?? 10.0,
+    };
+  }
+
+  Future<void> updateBudgetSettings(Map<String, dynamic> settings) async {
+    await _appSettingsDoc.set({
+      ...settings,
+      'updated_at': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> addAuditLog({
+    required String actorId,
+    required String actorName,
+    required String action,
+    required String target,
+    Map<String, dynamic>? metadata,
+  }) async {
+    await _auditLogsCol.add({
+      'actor_id': actorId,
+      'actor_name': actorName,
+      'action': action,
+      'target': target,
+      'metadata': metadata ?? {},
+      'created_at': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getAuditLogs({int limit = 80}) async {
+    final snapshot = await _auditLogsCol
+        .orderBy('created_at', descending: true)
+        .limit(limit)
+        .get();
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return {...data, 'id': doc.id};
+    }).toList();
   }
 }

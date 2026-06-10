@@ -16,6 +16,7 @@ class AuthService {
   static const String _keyUserGender = 'user_gender';
   static const String _keyUserAddress = 'user_address';
   static const String _keyUserProfileImage = 'user_profile_image';
+  static const String _keyUserIsActive = 'user_is_active';
 
   static final ValueNotifier<User?> userNotifier = ValueNotifier<User?>(null);
 
@@ -36,6 +37,7 @@ class AuthService {
       await prefs.setString(_keyUserAddress, user.address!);
     if (user.profileImageUrl != null)
       await prefs.setString(_keyUserProfileImage, user.profileImageUrl!);
+    await prefs.setBool(_keyUserIsActive, user.isActive);
 
     userNotifier.value = user;
     return true;
@@ -58,6 +60,7 @@ class AuthService {
       gender: prefs.getString(_keyUserGender),
       address: prefs.getString(_keyUserAddress),
       profileImageUrl: prefs.getString(_keyUserProfileImage),
+      isActive: prefs.getBool(_keyUserIsActive) ?? true,
     );
     userNotifier.value = user;
     return user;
@@ -75,6 +78,7 @@ class AuthService {
     await prefs.remove(_keyUserGender);
     await prefs.remove(_keyUserAddress);
     await prefs.remove(_keyUserProfileImage);
+    await prefs.remove(_keyUserIsActive);
     userNotifier.value = null;
   }
 
