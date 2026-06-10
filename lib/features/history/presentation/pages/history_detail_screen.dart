@@ -38,6 +38,11 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     return state is Map ? Map<String, dynamic>.from(state) : {};
   }
 
+  Map<String, dynamic> get _selectedVehicleDetails {
+    final vehicle = _stateDetails['selectedVehicle'];
+    return vehicle is Map ? Map<String, dynamic>.from(vehicle) : {};
+  }
+
   Map<String, dynamic> get _costDetails {
     final biaya = _details['biaya'];
     return biaya is Map ? Map<String, dynamic>.from(biaya) : {};
@@ -49,6 +54,28 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     String fallback = '',
   ]) {
     return map[key]?.toString() ?? fallback;
+  }
+
+  String _vehicleText(String key, [String fallback = '']) {
+    return _selectedVehicleDetails[key]?.toString() ?? fallback;
+  }
+
+  bool get _hasSelectedVehicle {
+    final vehicle = _selectedVehicleDetails;
+    return (vehicle['make']?.toString().isNotEmpty ?? false) ||
+        (vehicle['model']?.toString().isNotEmpty ?? false);
+  }
+
+  String get _selectedVehicleName {
+    final make = _vehicleText('make');
+    final model = _vehicleText('model');
+    return [make, model].where((value) => value.isNotEmpty).join(' ');
+  }
+
+  String get _transportLabel {
+    final transport = item['transport']?.toString() ?? '-';
+    if (!_hasSelectedVehicle) return transport;
+    return '$transport - $_selectedVehicleName';
   }
 
   double _doubleValue(dynamic value) {
@@ -106,7 +133,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
   Widget build(BuildContext context) {
     final title = item['title']?.toString() ?? 'Riwayat Perjalanan';
     final location = item['location']?.toString() ?? '-';
-    final transport = item['transport']?.toString() ?? '-';
+    final transportLabel = _transportLabel;
     final date = item['date']?.toString() ?? '-';
     final destinationId = item['destination_id']?.toString() ?? '-';
     final totalBudget = _fmtCurrency(item['total_budget']);
@@ -179,7 +206,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    _summaryCard(totalBudget, transport, date),
+                    _summaryCard(totalBudget, transportLabel, date),
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -233,7 +260,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                     _detailTile(
                       Icons.directions_car,
                       'Transportasi',
-                      transport,
+                      transportLabel,
                     ),
                     _detailTile(Icons.calendar_today, 'Tanggal', date),
                     _detailTile(
@@ -257,6 +284,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     final form = _formDetails;
     final state = _stateDetails;
     final biaya = _costDetails;
+    final hasVehicle = _hasSelectedVehicle;
 
     if (form.isEmpty && biaya.isEmpty) {
       return Container(
@@ -293,6 +321,19 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
               item['transport']?.toString() ?? '-',
             ),
           ),
+          if (hasVehicle) ...[
+            _compactRow('Kendaraan', _selectedVehicleName),
+            _compactRow('Tipe', _vehicleText('type', '-')),
+            if (_vehicleText('year').isNotEmpty)
+              _compactRow('Tahun', _vehicleText('year')),
+            if (_vehicleText('transmission').isNotEmpty)
+              _compactRow('Transmisi', _vehicleText('transmission')),
+            if (_vehicleText('colour').isNotEmpty)
+              _compactRow('Warna', _vehicleText('colour')),
+            if (_vehicleText('engineCc').isNotEmpty &&
+                _vehicleText('engineCc') != '0')
+              _compactRow('Mesin', '${_vehicleText('engineCc')} cc'),
+          ],
           _compactRow('BBM', _textValue(state, 'fuelType', '-')),
           _compactRow('Konsumsi', '${_textValue(form, 'bbm', '0')} km/l'),
           _compactRow('Jarak', '${_textValue(form, 'jarak', '0')} km'),

@@ -94,303 +94,314 @@ class BudgetFormTab extends StatelessWidget {
     final List<VehicleEntry> results = searchResults is List
         ? searchResults.whereType<VehicleEntry>().toList()
         : <VehicleEntry>[];
+    final safeSelectedMake = makes.contains(selectedMake) ? selectedMake : null;
 
     return SectionCard(
       title: 'Cari Data Kendaraan',
       icon: Icons.directions_car_filled,
       color: Colors.deepPurple,
       children: [
-        // Toggle Jenis Kendaraan
-        Row(
-          children: [
-            const Text(
-              'Jenis Kendaraan: ',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(
-                    value: false,
-                    label: Text('Mobil', style: TextStyle(fontSize: 11)),
-                  ),
-                  ButtonSegment(
-                    value: true,
-                    label: Text('Motor', style: TextStyle(fontSize: 11)),
-                  ),
-                ],
-                selected: {searchIsMotor},
-                onSelectionChanged: (Set<bool> selection) async {
-                  final isMotor = selection.first;
-                  onStateChanged('searchIsMotor', isMotor);
-                  onStateChanged('selectedMake', null);
-                  onStateChanged('selectedVehicle', null);
-                  onStateChanged('tipeKendaraan', null);
-                  onStateChanged('searchResults', <VehicleEntry>[]);
-                  controllers['modelSearch']?.clear();
-                  onStateChanged(
-                    'vehicleMakes',
-                    await VehicleRepository.instance.getMakes(
-                      isMotorcycle: isMotor,
-                    ),
-                  );
-                },
-                style: SegmentedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
+        if (selectedVehicle != null) ...[
+          _selectedVehicleCard(context, selectedVehicle, selectedMake),
+        ] else ...[
+          // Toggle Jenis Kendaraan
+          Row(
+            children: [
+              const Text(
+                'Jenis Kendaraan: ',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Dropdown Merk
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Merk Kendaraan',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Container(
-              height: 40,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade400),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: selectedMake,
-                  isExpanded: true,
-                  icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-                  style: const TextStyle(fontSize: 12, color: Colors.black87),
-                  hint: const Text(
-                    'Pilih merk...',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  items: [
-                    const DropdownMenuItem<String>(
-                      value: null,
-                      child: Text(
-                        'Pilih merk...',
-                        style: TextStyle(color: Colors.grey),
-                      ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(
+                      value: false,
+                      label: Text('Mobil', style: TextStyle(fontSize: 11)),
                     ),
-                    ...makes.map(
-                      (m) => DropdownMenuItem<String>(value: m, child: Text(m)),
+                    ButtonSegment(
+                      value: true,
+                      label: Text('Motor', style: TextStyle(fontSize: 11)),
                     ),
                   ],
-                  onChanged: (v) async {
-                    onStateChanged('selectedMake', v);
+                  selected: {searchIsMotor},
+                  onSelectionChanged: (Set<bool> selection) async {
+                    final isMotor = selection.first;
+                    onStateChanged('searchIsMotor', isMotor);
+                    onStateChanged('transport', isMotor ? 'Motor' : 'Mobil');
+                    onStateChanged('selectedMake', null);
                     onStateChanged('selectedVehicle', null);
                     onStateChanged('tipeKendaraan', null);
                     onStateChanged('searchResults', <VehicleEntry>[]);
                     controllers['modelSearch']?.clear();
-                    // Langsung tampilkan semua model dari merk ini
-                    if (v != null) {
-                      final results = await VehicleRepository.instance
-                          .searchVehicle(make: v, isMotorcycle: searchIsMotor);
-                      onStateChanged('searchResults', results);
-                    }
+                    onStateChanged(
+                      'vehicleMakes',
+                      await VehicleRepository.instance.getMakes(
+                        isMotorcycle: isMotor,
+                      ),
+                    );
                   },
+                  style: SegmentedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Input model + tombol cari
-        Row(
-          children: [
-            Expanded(
-              child: BudgetField(
-                label: 'Cari Model (opsional)',
-                hint: 'Contoh: Avanza, Beat, Civic',
-                controller: controllers['modelSearch'],
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Dropdown Merk
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Merk Kendaraan',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Padding(
-              padding: const EdgeInsets.only(top: 20),
-              child: SizedBox(
+              const SizedBox(height: 6),
+              Container(
                 height: 40,
-                child: ElevatedButton(
-                  onPressed: () => _searchVehicle(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                  child: const Icon(Icons.search, size: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade400),
                 ),
-              ),
-            ),
-          ],
-        ),
-        // Search results list
-        if (results.isNotEmpty && selectedVehicle == null) ...[
-          const SizedBox(height: 12),
-          Text(
-            'Ditemukan ${results.length} kendaraan:',
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            constraints: const BoxConstraints(maxHeight: 200),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.deepPurple.shade100),
-            ),
-            child: ListView.separated(
-              shrinkWrap: true,
-              padding: const EdgeInsets.all(4),
-              itemCount: results.length,
-              separatorBuilder: (_, __) =>
-                  Divider(height: 1, color: Colors.grey.shade200),
-              itemBuilder: (context, index) {
-                final v = results[index];
-                return ListTile(
-                  dense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 0,
-                  ),
-                  title: Text(
-                    v.displayName,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: safeSelectedMake,
+                    isExpanded: true,
+                    icon: const Icon(Icons.keyboard_arrow_down, size: 20),
+                    style: const TextStyle(fontSize: 12, color: Colors.black87),
+                    hint: const Text(
+                      'Pilih merk...',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
-                  ),
-                  subtitle: Text(
-                    '${v.detailInfo} | ${v.consumption.toStringAsFixed(0)} km/l',
-                    style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
-                  ),
-                  trailing: const Icon(
-                    Icons.chevron_right,
-                    size: 16,
-                    color: Colors.deepPurple,
-                  ),
-                  onTap: () => _selectVehicle(context, v),
-                );
-              },
-            ),
-          ),
-        ],
-        // Selected vehicle info card
-        if (selectedVehicle != null) ...[
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.deepPurple.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.deepPurple.shade200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        selectedVehicle.displayName,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () async {
-                        onStateChanged('selectedVehicle', null);
-                        onStateChanged('tipeKendaraan', null);
-                        if (selectedMake != null) {
-                          final results = await VehicleRepository.instance
-                              .searchVehicle(
-                                make: selectedMake,
-                                isMotorcycle: searchIsMotor,
-                              );
-                          onStateChanged('searchResults', results);
-                        }
-                      },
-                      child: const Icon(
-                        Icons.close,
-                        size: 16,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                _infoRow(Icons.category, 'Tipe', selectedVehicle.type),
-                _infoRow(
-                  Icons.local_gas_station,
-                  'Bahan Bakar',
-                  selectedVehicle.fuelType,
-                ),
-                if (selectedVehicle.engineCc > 0)
-                  _infoRow(
-                    Icons.settings,
-                    'Mesin',
-                    selectedVehicle.engineDisplay,
-                  ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.speed, size: 14, color: Colors.green.shade700),
-                      const SizedBox(width: 6),
-                      Expanded(
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: null,
                         child: Text(
-                          'Konsumsi BBM: ${selectedVehicle.consumption.toStringAsFixed(0)} km/l',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green.shade800,
-                          ),
+                          'Pilih merk...',
+                          style: TextStyle(color: Colors.grey),
                         ),
+                      ),
+                      ...makes.map(
+                        (m) =>
+                            DropdownMenuItem<String>(value: m, child: Text(m)),
                       ),
                     ],
+                    onChanged: (v) async {
+                      onStateChanged('selectedMake', v);
+                      onStateChanged('selectedVehicle', null);
+                      onStateChanged('tipeKendaraan', null);
+                      onStateChanged('searchResults', <VehicleEntry>[]);
+                      controllers['modelSearch']?.clear();
+                      // Langsung tampilkan semua model dari merk ini
+                      if (v != null) {
+                        final results = await VehicleRepository.instance
+                            .searchVehicle(
+                              make: v,
+                              isMotorcycle: searchIsMotor,
+                            );
+                        onStateChanged('searchResults', results);
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Input model + tombol cari
+          Row(
+            children: [
+              Expanded(
+                child: BudgetField(
+                  label: 'Cari Model (opsional)',
+                  hint: 'Contoh: Avanza, Beat, Civic',
+                  controller: controllers['modelSearch'],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(top: 20),
+                child: SizedBox(
+                  height: 40,
+                  child: ElevatedButton(
+                    onPressed: () => _searchVehicle(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    child: const Icon(Icons.search, size: 18),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // Search results list
+          if (results.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Ditemukan ${results.length} kendaraan:',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 200),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.deepPurple.shade100),
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: const EdgeInsets.all(4),
+                itemCount: results.length,
+                separatorBuilder: (_, index) =>
+                    Divider(height: 1, color: Colors.grey.shade200),
+                itemBuilder: (context, index) {
+                  final v = results[index];
+                  return ListTile(
+                    dense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 0,
+                    ),
+                    title: Text(
+                      v.displayName,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      '${v.detailInfo} | ${v.consumption.toStringAsFixed(0)} km/l',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      size: 16,
+                      color: Colors.deepPurple,
+                    ),
+                    onTap: () => _selectVehicle(context, v),
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _selectedVehicleCard(
+    BuildContext context,
+    VehicleEntry selectedVehicle,
+    String? selectedMake,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.deepPurple.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.deepPurple.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.green, size: 16),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  selectedVehicle.displayName,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () async {
+                  onStateChanged('selectedVehicle', null);
+                  onStateChanged('tipeKendaraan', null);
+                  if (selectedMake != null) {
+                    final results = await VehicleRepository.instance
+                        .searchVehicle(
+                          make: selectedMake,
+                          isMotorcycle:
+                              state['searchIsMotor'] as bool? ?? false,
+                        );
+                    onStateChanged('searchResults', results);
+                  }
+                },
+                icon: const Icon(Icons.swap_horiz, size: 16),
+                label: const Text('Ganti', style: TextStyle(fontSize: 12)),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.deepPurple,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _infoRow(Icons.category, 'Tipe', selectedVehicle.type),
+          _infoRow(
+            Icons.local_gas_station,
+            'Bahan Bakar',
+            selectedVehicle.fuelType,
+          ),
+          if (selectedVehicle.engineCc > 0)
+            _infoRow(Icons.settings, 'Mesin', selectedVehicle.engineDisplay),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.speed, size: 14, color: Colors.green.shade700),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Konsumsi BBM: ${selectedVehicle.consumption.toStringAsFixed(0)} km/l',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade800,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
         ],
-      ],
+      ),
     );
   }
 
@@ -491,38 +502,7 @@ class BudgetFormTab extends StatelessWidget {
           controller: controllers['budget'],
           isNumber: true,
         ),
-        if (hasSelectedVehicle) ...[
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.shade100),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.check_circle,
-                  color: Color(0xFF007AFF),
-                  size: 16,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '${selectedVehicle.displayName} | $transport',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ] else ...[
+        if (!hasSelectedVehicle) ...[
           const SizedBox(height: 12),
           BudgetDropdown<String>(
             label: 'Transportasi',
@@ -536,6 +516,11 @@ class BudgetFormTab extends StatelessWidget {
             onChanged: (v) {
               onStateChanged('transport', v);
               onStateChanged('tipeKendaraan', null);
+              if (v == 'Mobil' || v == 'Motor') {
+                onStateChanged('searchIsMotor', v == 'Motor');
+                onStateChanged('selectedMake', null);
+                onStateChanged('searchResults', <VehicleEntry>[]);
+              }
             },
           ),
         ],
@@ -892,7 +877,7 @@ class BudgetFormTab extends StatelessWidget {
             ),
             Switch(
               value: isDanaDarurat,
-              activeColor: Colors.green,
+              activeThumbColor: Colors.green,
               onChanged: (v) => onStateChanged('isDanaDarurat', v),
             ),
           ],

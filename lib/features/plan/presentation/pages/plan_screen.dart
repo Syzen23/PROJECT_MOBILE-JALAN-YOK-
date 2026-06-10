@@ -6,6 +6,7 @@ import 'package:jalanyok2/core/services/firestore_service.dart';
 import 'package:jalanyok2/core/models/destination_model.dart';
 import 'package:jalanyok2/core/models/api_destination_model.dart';
 import 'package:jalanyok2/core/services/auth_service.dart';
+import 'package:jalanyok2/core/data/vehicle_database.dart';
 import 'package:jalanyok2/core/repositories/destination_repository.dart';
 import 'package:jalanyok2/core/repositories/vehicle_repository.dart';
 import 'package:jalanyok2/core/models/trip_history_model.dart';
@@ -371,6 +372,7 @@ class _PlanScreenState extends State<PlanScreen>
 
   Map<String, dynamic> _buildHistoryDetailsSnapshot() {
     String text(String key) => _controllers[key]?.text ?? '';
+    final selectedVehicle = _state['selectedVehicle'] as VehicleEntry?;
 
     return {
       'form': {
@@ -398,8 +400,29 @@ class _PlanScreenState extends State<PlanScreen>
         'isTiketOtomatis': _state['isTiketOtomatis'],
         'isParkirOtomatis': _state['isParkirOtomatis'],
         'isDanaDarurat': _state['isDanaDarurat'],
+        'selectedMake': _state['selectedMake'],
+        'searchIsMotor': _state['searchIsMotor'],
+        'selectedVehicle': _vehicleSnapshot(selectedVehicle),
       },
       'biaya': Map<String, double>.from(_biaya),
+    };
+  }
+
+  Map<String, dynamic>? _vehicleSnapshot(VehicleEntry? vehicle) {
+    if (vehicle == null) return null;
+    return {
+      'id': vehicle.id,
+      'make': vehicle.make,
+      'model': vehicle.model,
+      'type': vehicle.type,
+      'year': vehicle.year,
+      'transmission': vehicle.transmission,
+      'colour': vehicle.colour,
+      'tankCapacityLiter': vehicle.tankCapacityLiter,
+      'price': vehicle.price,
+      'engineCc': vehicle.engineCc,
+      'fuelType': vehicle.fuelType,
+      'consumption': vehicle.consumption,
     };
   }
 
