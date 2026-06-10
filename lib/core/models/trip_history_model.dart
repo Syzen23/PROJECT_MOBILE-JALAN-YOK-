@@ -5,6 +5,9 @@ class TripHistory {
   final String transport;
   final double totalBudget;
   final String date;
+  final String? destinationTitle;
+  final String? destinationImage;
+  final String? destinationLocation;
 
   TripHistory({
     this.id,
@@ -13,6 +16,9 @@ class TripHistory {
     required this.transport,
     required this.totalBudget,
     required this.date,
+    this.destinationTitle,
+    this.destinationImage,
+    this.destinationLocation,
   });
 
   Map<String, dynamic> toMap() {
@@ -23,6 +29,9 @@ class TripHistory {
       'transport': transport,
       'total_budget': totalBudget,
       'date': date,
+      'destination_title': destinationTitle,
+      'destination_image': destinationImage,
+      'destination_location': destinationLocation,
     };
   }
 
@@ -32,8 +41,13 @@ class TripHistory {
       userId: map['user_id'].toString(),
       destinationId: map['destination_id'].toString(),
       transport: map['transport'],
-      totalBudget: map['total_budget'] is int ? (map['total_budget'] as int).toDouble() : map['total_budget'] as double,
+      totalBudget: map['total_budget'] is int
+          ? (map['total_budget'] as int).toDouble()
+          : map['total_budget'] as double,
       date: map['date'],
+      destinationTitle: map['destination_title'] as String?,
+      destinationImage: map['destination_image'] as String?,
+      destinationLocation: map['destination_location'] as String?,
     );
   }
 }

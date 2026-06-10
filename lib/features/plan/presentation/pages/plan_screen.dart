@@ -328,18 +328,42 @@ class _PlanScreenState extends State<PlanScreen>
         );
       return;
     }
+
+    final totalBudget = _biaya['total'] ?? 0;
+    if (totalBudget <= 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Hitung budget terlebih dahulu.')),
+        );
+      }
+      return;
+    }
+
     final history = TripHistory(
       userId: user.id!,
       destinationId: _selectedDestination!.id!,
       transport: _state['transport'] as String,
-      totalBudget: _biaya['total'] ?? 0,
+      totalBudget: totalBudget,
       date: DateTime.now().toIso8601String().split('T').first,
+      destinationTitle: _selectedDestination!.title,
+      destinationImage: _selectedDestination!.image,
+      destinationLocation: _selectedDestination!.location,
     );
-    await FirestoreService.instance.insertTripHistory(history);
-    if (mounted)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Berhasil disimpan ke Riwayat!')),
-      );
+
+    try {
+      await FirestoreService.instance.insertTripHistory(history);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Berhasil disimpan ke Riwayat!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal menyimpan riwayat: $e')));
+      }
+    }
   }
 
   void _bukaPeta() {

@@ -140,10 +140,13 @@ class FirestoreService {
     // Firestore doesn't support LIKE queries, so we fetch all and filter locally
     final all = await getAllDestinations();
     final lowerQuery = query.toLowerCase();
-    return all.where((d) =>
-      d.title.toLowerCase().contains(lowerQuery) ||
-      d.location.toLowerCase().contains(lowerQuery)
-    ).toList();
+    return all
+        .where(
+          (d) =>
+              d.title.toLowerCase().contains(lowerQuery) ||
+              d.location.toLowerCase().contains(lowerQuery),
+        )
+        .toList();
   }
 
   Future<void> updateDestination(Destination destination) async {
@@ -179,7 +182,10 @@ class FirestoreService {
         .get();
     if (snapshot.docs.isNotEmpty) {
       final doc = snapshot.docs.first;
-      return User.fromMap(doc.data() as Map<String, dynamic>, documentId: doc.id);
+      return User.fromMap(
+        doc.data() as Map<String, dynamic>,
+        documentId: doc.id,
+      );
     }
     return null;
   }
@@ -191,7 +197,10 @@ class FirestoreService {
         .get();
     if (snapshot.docs.isNotEmpty) {
       final doc = snapshot.docs.first;
-      return User.fromMap(doc.data() as Map<String, dynamic>, documentId: doc.id);
+      return User.fromMap(
+        doc.data() as Map<String, dynamic>,
+        documentId: doc.id,
+      );
     }
     return null;
   }
@@ -221,7 +230,10 @@ class FirestoreService {
   Future<List<User>> getAllUsers() async {
     final snapshot = await _usersCol.get();
     return snapshot.docs.map((doc) {
-      return User.fromMap(doc.data() as Map<String, dynamic>, documentId: doc.id);
+      return User.fromMap(
+        doc.data() as Map<String, dynamic>,
+        documentId: doc.id,
+      );
     }).toList();
   }
 
@@ -231,6 +243,7 @@ class FirestoreService {
   Future<TripHistory> insertTripHistory(TripHistory history) async {
     final map = history.toMap();
     map.remove('id');
+    map.removeWhere((_, value) => value == null);
     final docRef = await _tripHistoryCol.add(map);
     return TripHistory(
       id: docRef.id,
@@ -239,10 +252,15 @@ class FirestoreService {
       transport: history.transport,
       totalBudget: history.totalBudget,
       date: history.date,
+      destinationTitle: history.destinationTitle,
+      destinationImage: history.destinationImage,
+      destinationLocation: history.destinationLocation,
     );
   }
 
-  Future<List<Map<String, dynamic>>> getTripHistoryForUser(String userId) async {
+  Future<List<Map<String, dynamic>>> getTripHistoryForUser(
+    String userId,
+  ) async {
     final snapshot = await _tripHistoryCol
         .where('user_id', isEqualTo: userId)
         .get();
@@ -250,7 +268,22 @@ class FirestoreService {
     List<Map<String, dynamic>> results = [];
     for (var doc in snapshot.docs) {
       final data = doc.data() as Map<String, dynamic>;
-      // Fetch destination info
+      final snapshotTitle = data['destination_title'] as String?;
+      final snapshotImage = data['destination_image'] as String?;
+      final snapshotLocation = data['destination_location'] as String?;
+
+      if (snapshotTitle != null && snapshotTitle.isNotEmpty) {
+        results.add({
+          ...data,
+          'id': doc.id,
+          'title': snapshotTitle,
+          'image': snapshotImage ?? '',
+          'location': snapshotLocation ?? '',
+        });
+        continue;
+      }
+
+      // Fallback untuk riwayat lama yang masih menyimpan destination_id saja.
       final destId = data['destination_id'].toString();
       final destDoc = await _destinationsCol.doc(destId).get();
       final destData = destDoc.data() as Map<String, dynamic>?;
@@ -285,14 +318,19 @@ class FirestoreService {
     return docRef.id;
   }
 
-  Future<void> updateChatSessionMessages(String sessionId, List<Map<String, String>> messages) async {
+  Future<void> updateChatSessionMessages(
+    String sessionId,
+    List<Map<String, String>> messages,
+  ) async {
     await _chatSessionsCol.doc(sessionId).update({
       'messages': messages,
       'updated_at': FieldValue.serverTimestamp(),
     });
   }
 
-  Future<List<Map<String, dynamic>>> getChatSessionsForUser(String userId) async {
+  Future<List<Map<String, dynamic>>> getChatSessionsForUser(
+    String userId,
+  ) async {
     try {
       final snapshot = await _chatSessionsCol
           .where('user_id', isEqualTo: userId)
@@ -300,10 +338,7 @@ class FirestoreService {
 
       var docs = snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
-        return {
-          ...data,
-          'id': doc.id,
-        };
+        return {...data, 'id': doc.id};
       }).toList();
 
       // Sort locally to avoid needing a composite index in Firestore
