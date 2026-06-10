@@ -129,9 +129,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Colors.orange,
                 ),
                 _statCard(
-                  'Transaksi',
+                  'Total Rencana',
                   _transactions.length.toString(),
-                  Icons.receipt_long,
+                  Icons.event_note,
                   Colors.purple,
                 ),
               ],
@@ -178,7 +178,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Pantau user, transaksi, dan pola perjalanan dari data riwayat.',
+            'Pantau user, riwayat rencana, dan pola perjalanan.',
             style: TextStyle(color: Colors.white.withValues(alpha: 0.82)),
           ),
           const SizedBox(height: 18),

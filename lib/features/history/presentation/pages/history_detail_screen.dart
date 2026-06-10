@@ -299,7 +299,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                     ),
                     const SizedBox(height: 20),
                     const Text(
-                      'Detail Transaksi',
+                      'Detail Rencana',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

@@ -24,11 +24,7 @@ class AdminScaffold extends StatelessWidget {
             selectedIcon: Icon(Icons.dashboard),
             label: 'Dashboard',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Transaksi',
-          ),
+
           NavigationDestination(
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),

@@ -180,9 +180,9 @@ class _AdminInsightsScreenState extends State<AdminInsightsScreen> {
             children: [
               Expanded(
                 child: _miniMetric(
-                  'Transaksi',
+                  'Total Rencana',
                   _transactions.length.toString(),
-                  Icons.receipt_long,
+                  Icons.event_note,
                 ),
               ),
               const SizedBox(width: 10),

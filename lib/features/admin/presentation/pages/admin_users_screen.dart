@@ -274,7 +274,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 _infoRow('Gender', user.gender ?? '-'),
                 _infoRow('Alamat', user.address ?? '-'),
                 const Divider(height: 28),
-                _infoRow('Total Riwayat', '${_historyCount(user)} transaksi'),
+                _infoRow('Total Riwayat', '${_historyCount(user)} rencana'),
                 _infoRow('Total Budget', _fmtCurrency(_totalBudget(user))),
                 const SizedBox(height: 12),
                 const Text(

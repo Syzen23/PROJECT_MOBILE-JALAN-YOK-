@@ -23,7 +23,6 @@ import 'core/services/auth_service.dart';
 import 'core/services/firestore_service.dart';
 import 'features/admin/presentation/widgets/admin_scaffold.dart';
 import 'features/admin/presentation/pages/admin_dashboard_screen.dart';
-import 'features/admin/presentation/pages/admin_transactions_screen.dart';
 import 'features/admin/presentation/pages/admin_insights_screen.dart';
 import 'features/admin/presentation/pages/admin_settings_screen.dart';
 
@@ -46,8 +45,6 @@ final GlobalKey<NavigatorState> _shellNavigatorProfile =
 // Admin Navigators
 final GlobalKey<NavigatorState> _shellNavigatorAdminDashboard =
     GlobalKey<NavigatorState>(debugLabel: 'shellAdminDashboard');
-final GlobalKey<NavigatorState> _shellNavigatorAdminTransactions =
-    GlobalKey<NavigatorState>(debugLabel: 'shellAdminTransactions');
 final GlobalKey<NavigatorState> _shellNavigatorAdminUsers =
     GlobalKey<NavigatorState>(debugLabel: 'shellAdminUsers');
 final GlobalKey<NavigatorState> _shellNavigatorAdminInsights =
@@ -226,15 +223,7 @@ final GoRouter _router = GoRouter(
             ),
           ],
         ),
-        StatefulShellBranch(
-          navigatorKey: _shellNavigatorAdminTransactions,
-          routes: [
-            GoRoute(
-              path: '/admin_transactions',
-              builder: (context, state) => const AdminTransactionsScreen(),
-            ),
-          ],
-        ),
+
         StatefulShellBranch(
           navigatorKey: _shellNavigatorAdminUsers,
           routes: [
