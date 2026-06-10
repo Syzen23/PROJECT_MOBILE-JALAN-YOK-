@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/widgets/cached_app_image.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/firestore_service.dart';
+import '../../../../core/services/history_refresh_service.dart';
 import 'history_detail_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -15,6 +16,7 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   List<Map<String, dynamic>> historyItems = [];
   bool isLoading = true;
+  late final VoidCallback _refreshListener;
 
   String _fmtCurrency(dynamic value) {
     final number = value is num
@@ -33,7 +35,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
+    _refreshListener = () {
+      if (mounted) _loadHistory();
+    };
+    HistoryRefreshService.token.addListener(_refreshListener);
     _loadHistory();
+  }
+
+  @override
+  void dispose() {
+    HistoryRefreshService.token.removeListener(_refreshListener);
+    super.dispose();
   }
 
   Future<void> _loadHistory() async {
@@ -101,7 +113,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             ),
                           );
                       if (updatedItem != null && mounted) {
-                        setState(() => historyItems[index] = updatedItem);
+                        if (updatedItem['deleted'] == true) {
+                          setState(() => historyItems.removeAt(index));
+                        } else {
+                          setState(() => historyItems[index] = updatedItem);
+                        }
                       }
                     },
                   ),

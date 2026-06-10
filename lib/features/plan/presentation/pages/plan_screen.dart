@@ -6,6 +6,7 @@ import 'package:jalanyok2/core/services/firestore_service.dart';
 import 'package:jalanyok2/core/models/destination_model.dart';
 import 'package:jalanyok2/core/models/api_destination_model.dart';
 import 'package:jalanyok2/core/services/auth_service.dart';
+import 'package:jalanyok2/core/services/history_refresh_service.dart';
 import 'package:jalanyok2/core/data/vehicle_database.dart';
 import 'package:jalanyok2/core/repositories/destination_repository.dart';
 import 'package:jalanyok2/core/repositories/vehicle_repository.dart';
@@ -382,6 +383,7 @@ class _PlanScreenState extends State<PlanScreen>
 
     try {
       await FirestoreService.instance.insertTripHistory(history);
+      HistoryRefreshService.bump();
       await FirestoreService.instance.addAuditLog(
         actorId: user.id!,
         actorName: user.name,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jalanyok2/core/models/destination_model.dart';
+import 'package:jalanyok2/core/services/firestore_service.dart';
 import 'package:jalanyok2/core/widgets/cached_app_image.dart';
 import 'package:jalanyok2/features/plan/presentation/pages/map_screen.dart';
 
@@ -129,6 +130,42 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     }
   }
 
+  Future<void> _deleteHistory() async {
+    final historyId = item['id']?.toString();
+    if (historyId == null || historyId.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Hapus Riwayat?'),
+          content: const Text(
+            'Data riwayat ini akan dihapus permanen dari daftar perjalanan.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    await FirestoreService.instance.deleteTripHistory(historyId);
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Riwayat berhasil dihapus.')));
+    Navigator.pop(context, {'deleted': true, 'id': historyId});
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = item['title']?.toString() ?? 'Riwayat Perjalanan';
@@ -242,6 +279,23 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _deleteHistory,
+                        icon: const Icon(Icons.delete, size: 18),
+                        label: const Text('Hapus Riwayat'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 20),
                     const Text(

@@ -288,6 +288,10 @@ class FirestoreService {
     await _tripHistoryCol.doc(historyId).update(map);
   }
 
+  Future<void> deleteTripHistory(String historyId) async {
+    await _tripHistoryCol.doc(historyId).delete();
+  }
+
   Future<List<Map<String, dynamic>>> getTripHistoryForUser(
     String userId,
   ) async {
