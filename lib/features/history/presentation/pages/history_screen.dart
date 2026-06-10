@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/firestore_service.dart';
+import 'history_detail_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -86,7 +87,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     subtitle: Text(
                       'Budget: Rp ${item['total_budget']} | Via: ${item['transport']}\nTanggal: ${item['date']}',
                     ),
+                    trailing: const Icon(Icons.chevron_right),
                     isThreeLine: true,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => HistoryDetailScreen(item: item),
+                        ),
+                      );
+                    },
                   ),
                 );
               },
