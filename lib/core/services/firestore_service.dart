@@ -258,6 +258,16 @@ class FirestoreService {
     );
   }
 
+  Future<void> updateTripHistory(
+    String historyId,
+    Map<String, dynamic> data,
+  ) async {
+    final map = Map<String, dynamic>.from(data)
+      ..remove('id')
+      ..removeWhere((_, value) => value == null);
+    await _tripHistoryCol.doc(historyId).update(map);
+  }
+
   Future<List<Map<String, dynamic>>> getTripHistoryForUser(
     String userId,
   ) async {

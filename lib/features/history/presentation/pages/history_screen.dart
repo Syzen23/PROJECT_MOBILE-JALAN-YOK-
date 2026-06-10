@@ -89,13 +89,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     isThreeLine: true,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => HistoryDetailScreen(item: item),
-                        ),
-                      );
+                    onTap: () async {
+                      final updatedItem =
+                          await Navigator.push<Map<String, dynamic>>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  HistoryDetailScreen(item: item),
+                            ),
+                          );
+                      if (updatedItem != null && mounted) {
+                        setState(() => historyItems[index] = updatedItem);
+                      }
                     },
                   ),
                 );
