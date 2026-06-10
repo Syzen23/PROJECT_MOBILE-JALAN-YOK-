@@ -46,6 +46,7 @@ class _PlanScreenState extends State<PlanScreen>
   };
 
   // State
+  int _resetKey = 0;
   final Map<String, dynamic> _state = {
     'transport': 'Mobil',
     'tipeKendaraan': null,
@@ -398,6 +399,7 @@ class _PlanScreenState extends State<PlanScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Berhasil disimpan ke Riwayat!')),
         );
+        _resetForm();
       }
     } catch (e) {
       if (mounted) {
@@ -406,6 +408,52 @@ class _PlanScreenState extends State<PlanScreen>
         ).showSnackBar(SnackBar(content: Text('Gagal menyimpan riwayat: $e')));
       }
     }
+  }
+
+  void _resetForm() {
+    setState(() {
+      _controllers['budget']?.clear();
+      _controllers['bbm']?.clear();
+      _controllers['jarak']?.clear();
+      _controllers['tiket']?.clear();
+      _controllers['parkir']?.clear();
+      _controllers['makan']?.clear();
+      _controllers['penumpang']?.text = '1';
+      _controllers['durasi']?.text = '1';
+      _controllers['hargaPenginapan']?.text = '0';
+      _controllers['jumlahMalam']?.text = '0';
+      _controllers['jumlahKamar']?.text = '1';
+      _controllers['tol']?.clear();
+      _controllers['tiketTransport']?.clear();
+      _controllers['olehOleh']?.clear();
+      _controllers['lainnya']?.clear();
+      _controllers['platNomor']?.clear();
+      _controllers['modelSearch']?.clear();
+
+      _state['transport'] = 'Mobil';
+      _state['tipeKendaraan'] = null;
+      _state['fuelType'] = 'Pertalite';
+      _state['tipeAkomodasi'] = 'Tidak Menginap';
+      _state['frekuensiMakan'] = 3;
+      _state['isTiketOtomatis'] = true;
+      _state['isParkirOtomatis'] = true;
+      _state['isDanaDarurat'] = false;
+      _state['selectedVehicle'] = null;
+      _state['selectedMake'] = null;
+      _state['searchIsMotor'] = false;
+      _state['searchResults'] = <dynamic>[];
+
+      _resetKey++;
+      if (destinations.isNotEmpty) {
+        _selectedDestination = destinations[0];
+      } else {
+        _selectedDestination = null;
+      }
+
+      _biaya.updateAll((key, value) => 0);
+      
+      _tabController.animateTo(0);
+    });
   }
 
   Map<String, dynamic> _buildHistoryDetailsSnapshot() {
@@ -649,6 +697,7 @@ class _PlanScreenState extends State<PlanScreen>
                             ),
                             const Divider(height: 16),
                             Autocomplete<Destination>(
+                              key: ValueKey(_resetKey),
                               initialValue: TextEditingValue(
                                 text: _selectedDestination?.title ?? '',
                               ),
