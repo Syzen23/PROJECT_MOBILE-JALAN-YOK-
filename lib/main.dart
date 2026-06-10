@@ -19,6 +19,7 @@ import 'features/profile/presentation/pages/about_app_screen.dart';
 import 'features/admin/presentation/pages/admin_users_screen.dart';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'core/services/auth_service.dart';
 import 'core/services/firestore_service.dart';
 import 'features/admin/presentation/widgets/admin_scaffold.dart';
 import 'features/admin/presentation/pages/admin_dashboard_screen.dart';
@@ -90,13 +91,8 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/',
       builder: (BuildContext context, GoRouterState state) {
-        // Splash screen acts as the initial route. We can use a Future.delayed to navigate
-        // to auth options, but for now we'll just display it and let the user tap to continue,
-        // or automatically redirect after 2 seconds.
         Future.delayed(const Duration(seconds: 2), () {
-          if (context.mounted) {
-            context.go('/onboarding');
-          }
+          if (context.mounted) _redirectFromSplash(context);
         });
         return const SplashScreen();
       },
@@ -256,3 +252,25 @@ final GoRouter _router = GoRouter(
     ),
   ],
 );
+
+Future<void> _redirectFromSplash(BuildContext context) async {
+  final user = await AuthService.getCurrentUser();
+  if (!context.mounted) return;
+
+  if (user == null) {
+    context.go('/onboarding');
+    return;
+  }
+
+  if (user.role == 'admin') {
+    context.go('/admin_home');
+    return;
+  }
+
+  if (!AuthService.isProfileComplete(user)) {
+    context.go('/complete-profile');
+    return;
+  }
+
+  context.go('/home');
+}
