@@ -350,6 +350,7 @@ class _PlanScreenState extends State<PlanScreen>
       destinationTitle: _selectedDestination!.title,
       destinationImage: _selectedDestination!.image,
       destinationLocation: _selectedDestination!.location,
+      details: _buildHistoryDetailsSnapshot(),
     );
 
     try {
@@ -366,6 +367,40 @@ class _PlanScreenState extends State<PlanScreen>
         ).showSnackBar(SnackBar(content: Text('Gagal menyimpan riwayat: $e')));
       }
     }
+  }
+
+  Map<String, dynamic> _buildHistoryDetailsSnapshot() {
+    String text(String key) => _controllers[key]?.text ?? '';
+
+    return {
+      'form': {
+        'budget': text('budget'),
+        'bbm': text('bbm'),
+        'jarak': text('jarak'),
+        'tiket': text('tiket'),
+        'parkir': text('parkir'),
+        'makan': text('makan'),
+        'penumpang': text('penumpang'),
+        'durasi': text('durasi'),
+        'hargaPenginapan': text('hargaPenginapan'),
+        'jumlahMalam': text('jumlahMalam'),
+        'jumlahKamar': text('jumlahKamar'),
+        'tol': text('tol'),
+        'tiketTransport': text('tiketTransport'),
+        'olehOleh': text('olehOleh'),
+        'lainnya': text('lainnya'),
+      },
+      'state': {
+        'transport': _state['transport'],
+        'fuelType': _state['fuelType'],
+        'tipeAkomodasi': _state['tipeAkomodasi'],
+        'frekuensiMakan': _state['frekuensiMakan'],
+        'isTiketOtomatis': _state['isTiketOtomatis'],
+        'isParkirOtomatis': _state['isParkirOtomatis'],
+        'isDanaDarurat': _state['isDanaDarurat'],
+      },
+      'biaya': Map<String, double>.from(_biaya),
+    };
   }
 
   void _bukaPeta() {

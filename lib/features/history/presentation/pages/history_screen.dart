@@ -16,6 +16,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
   List<Map<String, dynamic>> historyItems = [];
   bool isLoading = true;
 
+  String _fmtCurrency(dynamic value) {
+    final number = value is num
+        ? value.toDouble()
+        : double.tryParse(value?.toString() ?? '') ?? 0;
+    final raw = number.toStringAsFixed(0);
+    final buffer = StringBuffer();
+    for (int i = 0; i < raw.length; i++) {
+      final reverseIndex = raw.length - i;
+      buffer.write(raw[i]);
+      if (reverseIndex > 1 && reverseIndex % 3 == 1) buffer.write('.');
+    }
+    return buffer.toString();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -59,6 +73,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               itemCount: historyItems.length,
               itemBuilder: (context, index) {
                 final item = historyItems[index];
+                final location = item['location']?.toString() ?? '-';
                 return Card(
                   margin: const EdgeInsets.only(bottom: 16),
                   child: ListTile(
@@ -72,7 +87,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(
-                      'Budget: Rp ${item['total_budget']} | Via: ${item['transport']}\nTanggal: ${item['date']}',
+                      '$location\nRp ${_fmtCurrency(item['total_budget'])} | Via: ${item['transport']} | ${item['date']}',
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     isThreeLine: true,

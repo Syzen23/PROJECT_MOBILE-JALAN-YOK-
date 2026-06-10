@@ -8,6 +8,7 @@ class TripHistory {
   final String? destinationTitle;
   final String? destinationImage;
   final String? destinationLocation;
+  final Map<String, dynamic>? details;
 
   TripHistory({
     this.id,
@@ -19,6 +20,7 @@ class TripHistory {
     this.destinationTitle,
     this.destinationImage,
     this.destinationLocation,
+    this.details,
   });
 
   Map<String, dynamic> toMap() {
@@ -32,6 +34,7 @@ class TripHistory {
       'destination_title': destinationTitle,
       'destination_image': destinationImage,
       'destination_location': destinationLocation,
+      'details': details,
     };
   }
 
@@ -48,6 +51,9 @@ class TripHistory {
       destinationTitle: map['destination_title'] as String?,
       destinationImage: map['destination_image'] as String?,
       destinationLocation: map['destination_location'] as String?,
+      details: map['details'] is Map
+          ? Map<String, dynamic>.from(map['details'] as Map)
+          : null,
     );
   }
 }

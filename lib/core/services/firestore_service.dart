@@ -255,6 +255,7 @@ class FirestoreService {
       destinationTitle: history.destinationTitle,
       destinationImage: history.destinationImage,
       destinationLocation: history.destinationLocation,
+      details: history.details,
     );
   }
 
