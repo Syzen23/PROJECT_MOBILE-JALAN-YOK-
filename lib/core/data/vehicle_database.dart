@@ -2,25 +2,85 @@
 /// Data: merk, model, tipe, ukuran mesin (cc), bahan bakar, konsumsi BBM (km/l)
 
 class VehicleEntry {
+  final int? id;
   final String make;
   final String model;
   final String type; // City Car, MPV, SUV, Sedan, Pickup, Sport, Matic, Bebek
+  final int? year;
+  final String? transmission;
+  final String? colour;
+  final double? tankCapacityLiter;
+  final double? price;
   final int engineCc;
   final String fuelType; // Bensin, Solar, Listrik
   final double consumption; // km/l
 
   const VehicleEntry({
+    this.id,
     required this.make,
     required this.model,
     required this.type,
+    this.year,
+    this.transmission,
+    this.colour,
+    this.tankCapacityLiter,
+    this.price,
     required this.engineCc,
     required this.fuelType,
     required this.consumption,
   });
 
+  factory VehicleEntry.fromApiJson(Map<String, dynamic> json) {
+    final kind = json['jenis_kendaraan']?.toString() ?? 'Mobil';
+    final cc = (json['cc'] as num?)?.toInt() ?? 0;
+    final fuel = json['jenis_bensin']?.toString() ?? 'Bensin';
+
+    return VehicleEntry(
+      id: (json['id'] as num?)?.toInt(),
+      make: json['merk']?.toString() ?? '',
+      model: json['model']?.toString() ?? '',
+      type: kind,
+      year: (json['tahun'] as num?)?.toInt(),
+      transmission: json['transmisi']?.toString(),
+      colour: json['warna']?.toString(),
+      tankCapacityLiter: (json['kapasitas_tangki_liter'] as num?)?.toDouble(),
+      price: (json['harga'] as num?)?.toDouble(),
+      engineCc: cc,
+      fuelType: fuel,
+      consumption: _estimateConsumption(kind, cc),
+    );
+  }
+
   String get displayName => '$make $model';
   String get engineDisplay => '${(engineCc / 1000).toStringAsFixed(1)}L ($engineCc cc)';
-  bool get isMotorcycle => ['Matic', 'Bebek', 'Sport', 'Trail', 'Retro'].contains(type);
+  bool get isMotorcycle => type.toLowerCase().contains('motor') || ['Matic', 'Bebek', 'Sport', 'Trail', 'Retro'].contains(type);
+
+  String get detailInfo {
+    final parts = <String>[];
+    if (year != null) parts.add('Tahun: $year');
+    parts.add(type);
+    parts.add(fuelType);
+    if (transmission != null && transmission!.isNotEmpty) parts.add(transmission!);
+    if (colour != null && colour!.isNotEmpty) parts.add(colour!);
+    if (engineCc > 0) parts.add(engineDisplay);
+    return parts.join(' | ');
+  }
+
+  static double _estimateConsumption(String kind, int cc) {
+    if (kind.toLowerCase().contains('motor')) {
+      if (cc <= 125) return 50;
+      if (cc <= 160) return 42;
+      if (cc <= 250) return 32;
+      return 28;
+    }
+
+    if (cc <= 0) return 12;
+    if (cc <= 1200) return 15;
+    if (cc <= 1500) return 13;
+    if (cc <= 2000) return 11;
+    if (cc <= 2500) return 10;
+    return 9;
+  }
 }
 
 class VehicleDatabase {

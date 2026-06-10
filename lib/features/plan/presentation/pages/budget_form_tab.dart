@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:jalanyok2/core/models/destination_model.dart';
 import 'package:jalanyok2/core/data/vehicle_database.dart';
+import 'package:jalanyok2/core/services/vehicle_api_service.dart';
 import 'budget_constants.dart';
 import 'budget_widgets.dart';
 
@@ -48,6 +49,10 @@ class BudgetFormTab extends StatelessWidget {
     final selectedMake = state['selectedMake'] as String?;
     final searchIsMotor = state['searchIsMotor'] as bool? ?? false;
     final searchResults = state['searchResults'];
+    final vehicleMakes = state['vehicleMakes'];
+    final List<String> makes = vehicleMakes is List
+        ? vehicleMakes.whereType<String>().toList()
+        : (searchIsMotor ? VehicleDatabase.motorcycleMakes : VehicleDatabase.carMakes);
     final List<VehicleEntry> results = searchResults is List
         ? searchResults.whereType<VehicleEntry>().toList()
         : <VehicleEntry>[];
@@ -93,17 +98,18 @@ class BudgetFormTab extends StatelessWidget {
             hint: const Text('Pilih merk...', style: TextStyle(fontSize: 12, color: Colors.grey)),
             items: [
               const DropdownMenuItem<String>(value: null, child: Text('Pilih merk...', style: TextStyle(color: Colors.grey))),
-              ...(searchIsMotor ? VehicleDatabase.motorcycleMakes : VehicleDatabase.carMakes).map((m) =>
+              ...makes.map((m) =>
                 DropdownMenuItem<String>(value: m, child: Text(m))),
             ],
-            onChanged: (v) {
+            onChanged: (v) async {
               onStateChanged('selectedMake', v);
               onStateChanged('selectedVehicle', null);
               onStateChanged('searchResults', <VehicleEntry>[]);
               controllers['modelSearch']?.clear();
               // Langsung tampilkan semua model dari merk ini
               if (v != null) {
-                onStateChanged('searchResults', VehicleDatabase.getByMake(v, isMotorcycle: searchIsMotor));
+                final results = await VehicleApiService.searchVehicle(make: v, isMotorcycle: searchIsMotor);
+                onStateChanged('searchResults', results);
               }
             },
           )),
@@ -167,10 +173,11 @@ class BudgetFormTab extends StatelessWidget {
               const Icon(Icons.check_circle, color: Colors.green, size: 16), const SizedBox(width: 6),
               Expanded(child: Text(selectedVehicle.displayName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold))),
               GestureDetector(
-                onTap: () {
+                onTap: () async {
                   onStateChanged('selectedVehicle', null);
                   if (selectedMake != null) {
-                    onStateChanged('searchResults', VehicleDatabase.getByMake(selectedMake));
+                    final results = await VehicleApiService.searchVehicle(make: selectedMake, isMotorcycle: searchIsMotor);
+                    onStateChanged('searchResults', results);
                   }
                 },
                 child: const Icon(Icons.close, size: 16, color: Colors.grey),
@@ -212,7 +219,7 @@ class BudgetFormTab extends StatelessWidget {
     );
   }
 
-  void _searchVehicle(BuildContext context) {
+  Future<void> _searchVehicle(BuildContext context) async {
     final make = state['selectedMake'] as String?;
     final query = controllers['modelSearch']?.text.trim() ?? '';
 
@@ -223,9 +230,11 @@ class BudgetFormTab extends StatelessWidget {
 
     onStateChanged('selectedVehicle', null);
 
-    final results = query.isEmpty
-        ? VehicleDatabase.getByMake(make)
-        : VehicleDatabase.search(make, query);
+    final results = await VehicleApiService.searchVehicle(
+      make: make,
+      model: query,
+      isMotorcycle: state['searchIsMotor'] as bool? ?? false,
+    );
 
     onStateChanged('searchResults', results);
 
@@ -239,14 +248,17 @@ class BudgetFormTab extends StatelessWidget {
     onStateChanged('searchResults', <VehicleEntry>[]);
 
     // Detect motor vs mobil
-    final isMotor = ['Matic', 'Bebek', 'Sport', 'Trail', 'Retro'].contains(vehicle.type);
+    final isMotor = vehicle.isMotorcycle;
     onStateChanged('transport', isMotor ? 'Motor' : 'Mobil');
 
     // Auto-fill konsumsi BBM
     controllers['bbm']!.text = vehicle.consumption.toStringAsFixed(0);
 
     // Auto-fill fuel type
-    if (vehicle.fuelType == 'Solar') {
+    final apiFuelType = vehicle.fuelType;
+    if (fuelTypes.any((fuel) => fuel['label'] == apiFuelType)) {
+      onStateChanged('fuelType', apiFuelType);
+    } else if (apiFuelType.toLowerCase().contains('solar') || apiFuelType.toLowerCase().contains('dex')) {
       onStateChanged('fuelType', 'Solar');
     } else {
       onStateChanged('fuelType', 'Pertalite');
