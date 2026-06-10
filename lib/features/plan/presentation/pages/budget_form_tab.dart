@@ -130,6 +130,7 @@ class BudgetFormTab extends StatelessWidget {
                   onStateChanged('searchIsMotor', isMotor);
                   onStateChanged('selectedMake', null);
                   onStateChanged('selectedVehicle', null);
+                  onStateChanged('tipeKendaraan', null);
                   onStateChanged('searchResults', <VehicleEntry>[]);
                   controllers['modelSearch']?.clear();
                   onStateChanged(
@@ -192,6 +193,7 @@ class BudgetFormTab extends StatelessWidget {
                   onChanged: (v) async {
                     onStateChanged('selectedMake', v);
                     onStateChanged('selectedVehicle', null);
+                    onStateChanged('tipeKendaraan', null);
                     onStateChanged('searchResults', <VehicleEntry>[]);
                     controllers['modelSearch']?.clear();
                     // Langsung tampilkan semua model dari merk ini
@@ -328,6 +330,7 @@ class BudgetFormTab extends StatelessWidget {
                     GestureDetector(
                       onTap: () async {
                         onStateChanged('selectedVehicle', null);
+                        onStateChanged('tipeKendaraan', null);
                         if (selectedMake != null) {
                           final results = await VehicleApiService.searchVehicle(
                             make: selectedMake,
@@ -448,6 +451,7 @@ class BudgetFormTab extends StatelessWidget {
     // Detect motor vs mobil
     final isMotor = vehicle.isMotorcycle;
     onStateChanged('transport', isMotor ? 'Motor' : 'Mobil');
+    onStateChanged('tipeKendaraan', null);
 
     // Auto-fill konsumsi BBM
     controllers['bbm']!.text = vehicle.consumption.toStringAsFixed(0);
@@ -472,6 +476,9 @@ class BudgetFormTab extends StatelessWidget {
     final transport = state['transport'] as String;
     final tipeKendaraan = state['tipeKendaraan'] as String?;
     final fuelType = state['fuelType'] as String;
+    final selectedVehicle = state['selectedVehicle'] as VehicleEntry?;
+    final hasSelectedVehicle = selectedVehicle != null;
+
     return SectionCard(
       title: 'Transportasi & Kendaraan',
       icon: Icons.directions_car,
@@ -483,52 +490,87 @@ class BudgetFormTab extends StatelessWidget {
           controller: controllers['budget'],
           isNumber: true,
         ),
-        const SizedBox(height: 12),
-        BudgetDropdown<String>(
-          label: 'Transportasi',
-          value: transport,
-          items: [
-            'Mobil',
-            'Motor',
-            'Bus',
-            'Kereta',
-          ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-          onChanged: (v) {
-            onStateChanged('transport', v);
-            onStateChanged('tipeKendaraan', null);
-          },
-        ),
-        if (isKendaraanPribadi && vehicleTypes.containsKey(transport)) ...[
+        if (hasSelectedVehicle) ...[
           const SizedBox(height: 12),
-          BudgetDropdown<String?>(
-            label: 'Tipe Kendaraan',
-            value: tipeKendaraan,
-            items: [
-              const DropdownMenuItem<String?>(
-                value: null,
-                child: Text('Pilih tipe...'),
-              ),
-              ...vehicleTypes[transport]!.map(
-                (e) => DropdownMenuItem<String?>(
-                  value: e['label'] as String,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue.shade100),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: Color(0xFF007AFF),
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
                   child: Text(
-                    e['label'] as String,
-                    overflow: TextOverflow.ellipsis,
+                    '${selectedVehicle.displayName} | $transport',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          ),
+        ] else ...[
+          const SizedBox(height: 12),
+          BudgetDropdown<String>(
+            label: 'Transportasi',
+            value: transport,
+            items: [
+              'Mobil',
+              'Motor',
+              'Bus',
+              'Kereta',
+            ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
             onChanged: (v) {
-              onStateChanged('tipeKendaraan', v);
-              if (v != null) {
-                final match = vehicleTypes[transport]!.firstWhere(
-                  (e) => e['label'] == v,
-                );
-                controllers['bbm']!.text = (match['konsumsi'] as double)
-                    .toStringAsFixed(0);
-              }
+              onStateChanged('transport', v);
+              onStateChanged('tipeKendaraan', null);
             },
           ),
+        ],
+        if (isKendaraanPribadi && vehicleTypes.containsKey(transport)) ...[
+          if (!hasSelectedVehicle) ...[
+            const SizedBox(height: 12),
+            BudgetDropdown<String?>(
+              label: 'Tipe Kendaraan',
+              value: tipeKendaraan,
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('Pilih tipe...'),
+                ),
+                ...vehicleTypes[transport]!.map(
+                  (e) => DropdownMenuItem<String?>(
+                    value: e['label'] as String,
+                    child: Text(
+                      e['label'] as String,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
+              onChanged: (v) {
+                onStateChanged('tipeKendaraan', v);
+                if (v != null) {
+                  final match = vehicleTypes[transport]!.firstWhere(
+                    (e) => e['label'] == v,
+                  );
+                  controllers['bbm']!.text = (match['konsumsi'] as double)
+                      .toStringAsFixed(0);
+                }
+              },
+            ),
+          ],
           const SizedBox(height: 12),
           BudgetDropdown<String>(
             label: 'Jenis BBM',
