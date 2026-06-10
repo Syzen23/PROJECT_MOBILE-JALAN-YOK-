@@ -23,10 +23,6 @@ import 'core/services/auth_service.dart';
 import 'core/services/firestore_service.dart';
 import 'features/admin/presentation/widgets/admin_scaffold.dart';
 import 'features/admin/presentation/pages/admin_dashboard_screen.dart';
-import 'features/admin/presentation/pages/admin_destinations_screen.dart';
-
-import 'features/admin/presentation/pages/destination_form_screen.dart';
-import 'core/models/destination_model.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'root',
@@ -47,8 +43,6 @@ final GlobalKey<NavigatorState> _shellNavigatorProfile =
 // Admin Navigators
 final GlobalKey<NavigatorState> _shellNavigatorAdminDashboard =
     GlobalKey<NavigatorState>(debugLabel: 'shellAdminDashboard');
-final GlobalKey<NavigatorState> _shellNavigatorAdminDestinations =
-    GlobalKey<NavigatorState>(debugLabel: 'shellAdminDestinations');
 final GlobalKey<NavigatorState> _shellNavigatorAdminUsers =
     GlobalKey<NavigatorState>(debugLabel: 'shellAdminUsers');
 
@@ -224,15 +218,6 @@ final GoRouter _router = GoRouter(
           ],
         ),
         StatefulShellBranch(
-          navigatorKey: _shellNavigatorAdminDestinations,
-          routes: [
-            GoRoute(
-              path: '/admin_destinations',
-              builder: (context, state) => const AdminDestinationsScreen(),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
           navigatorKey: _shellNavigatorAdminUsers,
           routes: [
             GoRoute(
@@ -242,13 +227,6 @@ final GoRouter _router = GoRouter(
           ],
         ),
       ],
-    ),
-    GoRoute(
-      path: '/admin/destination-form',
-      builder: (context, state) {
-        final dest = state.extra as Destination?;
-        return DestinationFormScreen(destination: dest);
-      },
     ),
   ],
 );

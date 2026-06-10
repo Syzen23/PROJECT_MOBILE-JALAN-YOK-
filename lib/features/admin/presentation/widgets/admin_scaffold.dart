@@ -25,11 +25,6 @@ class AdminScaffold extends StatelessWidget {
             label: 'Dashboard',
           ),
           NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Destinasi',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),
             label: 'Users',

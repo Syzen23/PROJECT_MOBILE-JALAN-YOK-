@@ -12,7 +12,6 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int totalUsers = 0;
-  int totalDestinations = 0;
   bool isLoading = true;
 
   @override
@@ -23,11 +22,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Future<void> _loadStats() async {
     final users = await FirestoreService.instance.getAllUsers();
-    final destinations = await FirestoreService.instance.getAllDestinations();
-    
+
     setState(() {
       totalUsers = users.length;
-      totalDestinations = destinations.length;
       isLoading = false;
     });
   }
@@ -40,7 +37,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Admin Dashboard',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -48,7 +48,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               await AuthService.logout();
               if (context.mounted) context.go('/login');
             },
-          )
+          ),
         ],
       ),
       body: Padding(
@@ -56,14 +56,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Statistik', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text(
+              'Statistik',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(child: _buildStatCard('Total Users', totalUsers.toString(), Icons.people, Colors.blue)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildStatCard('Destinasi', totalDestinations.toString(), Icons.map, Colors.orange)),
-              ],
+            _buildStatCard(
+              'Total Users',
+              totalUsers.toString(),
+              Icons.people,
+              Colors.blue,
             ),
           ],
         ),
@@ -71,7 +73,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String count, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String count,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -81,9 +88,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           children: [
             Icon(icon, size: 40, color: color),
             const SizedBox(height: 12),
-            Text(count, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Text(
+              count,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 4),
-            Text(title, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
           ],
         ),
       ),
